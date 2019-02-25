@@ -7,17 +7,18 @@
 
 import Foundation
 import XCTest
+import CDBus // TODO: fix this?
 @testable import DBus
 
 final class SignatureTests: XCTestCase {
-    
+
     static let allTests: [(String, (SignatureTests) -> () -> Void)] = [
         ("testInvalid", testInvalid),
         ("testValid", testValid)
     ]
-    
+
     func testInvalid() {
-        
+
         let strings = [
             "aa",
             "(ii",
@@ -33,23 +34,23 @@ final class SignatureTests: XCTestCase {
             "a{(i)a}",
             "a{vs}"
         ]
-        
+
         for string in strings {
-            
+
             XCTAssertNil(DBusSignature(rawValue: string), "\(string) should be invalid")
             XCTAssertThrowsError(try DBusSignature.validate(string))
             do { try DBusSignature.validate(string) }
-            catch let error as DBusError {
-                XCTAssertEqual(error.name, DBusError.Name.invalidSignature)
+            catch let error as DBus.DBusError {
+                XCTAssertEqual(error.name, DBUS_ERROR_INVALID_SIGNATURE)
                 print("\"\(string)\" is invalid: \(error.message)"); return
             }
             catch { XCTFail("Invalid error \(error)"); return }
             XCTFail("Error expected for \(string)")
         }
     }
-    
+
     func testValid() {
-        
+
         let values: [(String, DBusSignature)] = [
             ("", []),
             ("s", [.string]),
@@ -70,20 +71,20 @@ final class SignatureTests: XCTestCase {
             ("a{sai}", [.dictionary(DBusSignature.DictionaryType(key: .string, value: .array(.int32))!)]),
             ("a{sv}", [.dictionary(DBusSignature.DictionaryType(key: .string, value: .variant)!)])
         ]
-        
+
         for (string, expectedSignature) in values {
-            
+
             XCTAssertNoThrow(try DBusSignature.validate(string))
-            
+
             guard let signature = DBusSignature(rawValue: string)
                 else { XCTFail("Could not parse string \(string)"); continue }
-            
+
             XCTAssertEqual(signature, expectedSignature)
             XCTAssertEqual(signature.rawValue, string)
             XCTAssertEqual(signature.string, string)
             XCTAssertEqual(signature.elements, expectedSignature.elements)
             XCTAssertEqual(Array(signature), Array(expectedSignature))
-            
+
             var mutable = signature
             mutable.append(.double)
             XCTAssertNil(mutable.string)

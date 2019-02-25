@@ -10,13 +10,13 @@
 ///
 /// This determines whether `DBusConnection.dispatch()` needs to be called.
 public enum DBusDispatchStatus: UInt32 {
-    
+
     /// There is more data to potentially convert to messages.
     case dataRemains
-    
+
     /// All currently available data has been processed.
     case complete
-    
+
     /// More memory is needed to continue.
     case needMemory
 }

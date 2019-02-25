@@ -9,7 +9,7 @@ import CDBus
 
 /**
  DBus Member Name
- 
+
  Member (i.e. method or signal) names:
  * Must only contain the ASCII characters "[A-Z][a-z][0-9]_" and may not begin with a digit.
  * Must not contain the '.' (period) character.
@@ -19,24 +19,24 @@ import CDBus
  It is conventional for member names on D-Bus to consist of capitalized words with no punctuation ("camel-case"). Method names should usually be verbs, such as "`GetItems`", and signal names should usually be a description of an event, such as "`ItemsChanged`".
  */
 public struct DBusMember: RawRepresentable, Equatable, Hashable {
-    
+
     public let rawValue: String
-    
+
     public init?(rawValue: String) {
-        
+
         do { try DBusMember.validate(rawValue) }
         catch { return nil }
-        
+
         self.rawValue = rawValue
     }
 }
 
 internal extension DBusMember {
-    
+
     static func validate(_ string: String) throws {
-        
+
         let error = DBusError()
-        guard Bool(dbus_validate_member(string, &error.internalValue))
+        guard Bool(dbus_validate_member(string, &error.cError))
             else { throw error }
     }
 }
@@ -44,9 +44,9 @@ internal extension DBusMember {
 // MARK: - CustomStringConvertible
 
 extension DBusMember: CustomStringConvertible {
-    
+
     public var description: String {
-        
+
         return rawValue
     }
 }

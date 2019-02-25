@@ -13,24 +13,21 @@ import XCTest
 final class ErrorTests: XCTestCase {
 
     static let allTests = [
-        ("testNewGoodError", testNewGoodError),
-        ("testBadErrorThrows", testBadErrorThrows),
+        ("testNewError", testNewError),
     ]
 
-    func testNewGoodError() {
+    func testNewError() {
         do {
             let name = "org.freedesktop.DBus.Error.InvalidArgs"
             let message = "Foo!"
             let e = try DBusError(name: name, message: message)
+            print("\(name), \(e.name)")
+            print("\(message), \(e.message)")
             XCTAssertEqual(name, e.name)
             XCTAssertEqual(message, e.message)
             // let r = e.Reference()
         } catch {
             XCTFail("\(error)")
         }
-    }
-
-    func testBadErrorThrows() {
-        XCTAssertThrowsError(try DBusError(name: ".foo", message: "nobody loves buggy code"))
     }
 }

@@ -3,10 +3,10 @@
     "pins": [
       {
         "package": "CDBus",
-        "repositoryURL": "https://github.com/PureSwift/CDBus.git",
+        "repositoryURL": "https://github.com/taborkelly/CDBus.git",
         "state": {
           "branch": "master",
-          "revision": "ccffce2e8469e89589d24234eed31c067104722a",
+          "revision": "9e51448e5b903438fcd6b6e1b10c438239f0f31f",
           "version": null
         }
       }

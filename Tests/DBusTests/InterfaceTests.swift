@@ -10,14 +10,14 @@ import XCTest
 @testable import DBus
 
 final class InterfaceTests: XCTestCase {
-    
+
     static let allTests: [(String, (InterfaceTests) -> () -> Void)] = [
         ("testInvalid", testInvalid),
         ("testValid", testValid)
     ]
-    
+
     func testInvalid() {
-        
+
         let strings = [
             "org.7-zip.Plugin",
             "org.7zip.Plugin",
@@ -36,9 +36,9 @@ final class InterfaceTests: XCTestCase {
             "a.ñ",
             "a.😀"
         ]
-        
+
         for string in strings {
-            
+
             XCTAssertNil(DBusInterface(rawValue: string), "\(string) should be invalid")
             XCTAssertThrowsError(try DBusInterface.validate(string))
             do { try DBusInterface.validate(string) }
@@ -53,12 +53,12 @@ final class InterfaceTests: XCTestCase {
             }
             XCTFail("Error expected for \(string)")
         }
-        
+
         XCTAssertNil(DBusInterface([]))
     }
-    
+
     func testValid() {
-        
+
         let values = [
             ("org._7_zip.Plugin", ["org", "_7_zip", "Plugin"]),
             ("a.b", ["a", "b"]),
@@ -66,14 +66,14 @@ final class InterfaceTests: XCTestCase {
             ("com.example.MusicPlayer1", ["com", "example", "MusicPlayer1"]),
             ("com.example.MusicPlayer1.Track", ["com", "example", "MusicPlayer1", "Track"])
         ]
-        
+
         for (string, elements) in values {
-            
+
             XCTAssertNoThrow(try DBusInterface.validate(string))
-            
+
             guard let interface = DBusInterface(rawValue: string)
                 else { XCTFail("Could not parse \(string)"); return }
-            
+
             XCTAssertEqual(interface.rawValue, string)
             XCTAssertEqual(interface.rawValue, String(interface.elements))
             XCTAssertEqual(interface.elements.map { $0.rawValue }, elements)
@@ -81,7 +81,7 @@ final class InterfaceTests: XCTestCase {
             XCTAssert(interface.count > 1)
             XCTAssertEqual(interface, DBusInterface(interface.elements))
             XCTAssertEqual(interface.hashValue, string.hashValue)
-            
+
             // mutate
             var mutable = interface
             mutable.append(DBusInterface.Element(rawValue: "Object1")!)

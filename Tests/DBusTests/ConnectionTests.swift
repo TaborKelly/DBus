@@ -1,0 +1,31 @@
+//
+//  ConnectionTests.swift
+//  DBus
+//
+//  Created by Tabor Kelly on 1/28/19.
+//  Copyright © 2019 PureSwift. All rights reserved.
+//
+
+import Foundation
+import XCTest
+@testable import DBus
+
+final class ConnectionTests: XCTestCase {
+
+    static let allTests = [
+        ("testFoo", testFoo),
+    ]
+
+    func testFoo() {
+        #if (Xcode)
+        print("Skipping test, please run in SPM.")
+        #else
+        do {
+            let conn = try DBusConnection(busType: .session)
+            print(conn)
+        } catch {
+            XCTFail("\(error)")
+        }
+        #endif
+    }
+}

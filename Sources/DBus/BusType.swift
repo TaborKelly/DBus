@@ -11,10 +11,10 @@ public enum DBusBusType: UInt32 {
     
     /// The login session bus.
     case session
-    
+
     /// The systemwide bus.
     case system
-    
+
     /// The bus that started us, if any.
     case starter
 }

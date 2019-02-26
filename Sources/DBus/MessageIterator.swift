@@ -273,16 +273,3 @@ internal extension DBusMessageIter {
         try container(&subIterator)
     }
 }
-
-/*
-private extension DBusError {
-
-    // Argument could not be appended due to lack of memory.
-    static var messageAppendOutOfMemory: DBusError {
-
-        // If this fails due to lack of memory, the message is hosed and you have to start over building the whole message.
-        // FALSE if not enough memory
-        return DBusError(name: DBUS_ERROR_NO_MEMORY, message: "Argument could not be appended to message due to lack of memory.")
-    }
-}
-*/

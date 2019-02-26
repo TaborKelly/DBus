@@ -11,12 +11,11 @@ import XCTest
 @testable import DBus
 
 final class ConnectionTests: XCTestCase {
-
     static let allTests = [
-        ("testFoo", testFoo),
+        ("testNewConnection", testNewConnection),
     ]
 
-    func testFoo() {
+    func testNewConnection() {
         #if (Xcode)
         print("Skipping test, please run in SPM.")
         #else

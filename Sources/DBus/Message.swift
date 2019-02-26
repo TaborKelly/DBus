@@ -61,10 +61,15 @@ public final class DBusMessage {
     /// Constructs a new message to invoke a method on a remote object.
     ///
     /// - Note: Destination, path, interface, and method name can't contain any invalid characters (see the D-Bus specification).
-    public init(methodCall: MethodCall) throws {
-
+    public init(destination: String?,
+                path: String,
+                iface: String?,
+                method: String) throws {
         // Returns NULL if memory can't be allocated for the message.
-        guard let internalPointer = dbus_message_new_method_call(methodCall.destination?.rawValue, methodCall.path.rawValue, methodCall.interface?.rawValue, methodCall.method) else {
+        guard let internalPointer = dbus_message_new_method_call(destination,
+                                                                 path,
+                                                                 iface,
+                                                                 method) else {
             throw RuntimeError.generic("dbus_message_new_method_call() failed")
         }
 
@@ -435,17 +440,6 @@ public extension DBusMessage {
 
 public extension DBusMessage {
 
-    public struct MethodCall {
-
-        public let destination: DBusBusName?
-        public let path: DBusObjectPath
-        public let interface: DBusInterface?
-        public let method: String
-    }
-}
-
-public extension DBusMessage {
-
     /// A signal is identified by its originating object path, interface, and the name of the signal.
     public struct Signal {
 
@@ -454,40 +448,3 @@ public extension DBusMessage {
         public let name: String
     }
 }
-
-/*
-public extension DBusError {
-    /**
-     Sets a DBusError based on the contents of the given message.
-
-     The error is only set if the message is an error message, as in `DBusMessageType.error`. The name of the error is set to the name of the message, and the error message is set to the first argument if the argument exists and is a string.
-     */
-    init?(message: DBusMessage) {
-
-        guard let reference = Reference(message: message)
-            else { return nil }
-
-        self.init(reference)
-    }
-}
-*/
-// MARK: - Private Extensions
-
-/*
-private extension DBusError {
-
-    // Could not initialize message due to lack of memory.
-    static var messageInitializationOutOfMemory: DBusError {
-
-        return DBusError(name: .noMemory, message: "Could not initialize message due to lack of memory.")
-    }
-
-    // Could not modify message due to lack of memory.
-    static var messageSetValueOutOfMemory: DBusError {
-
-        // If this fails due to lack of memory, the message is hosed and you have to start over building the whole message.
-        // FALSE if not enough memory
-        return DBusError(name: .noMemory, message: "Could not modify message due to lack of memory.")
-    }
-}
-*/

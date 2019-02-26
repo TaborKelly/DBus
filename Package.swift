@@ -4,32 +4,25 @@ import PackageDescription
 let package = Package(
     name: "DBus",
     products: [
-        .library(
-            name: "DBus",
-            targets: [
-                "DBus"
-            ]
-        )
+        .library(name: "DBus", targets: ["DBus"]),
+        .executable(name: "DBusClient", targets: ["DBusClient"]),
     ],
     dependencies: [
-        .package(
-            url: "https://github.com/taborkelly/CDBus.git",
-            .branch("master")
-        )
+        .package( url: "https://github.com/taborkelly/CDBus.git", .branch("master"))
     ],
     targets: [
         .target(
             name: "DBus",
-            dependencies: [
-                //"CDBus"
-            ]
+            dependencies: [ ]
+        ),
+        .target(
+            name: "DBusClient",
+            dependencies: [ "DBus" ]
         ),
         .testTarget(
             name: "DBusTests",
-            dependencies: [
-                "DBus"
-            ]
+            dependencies: ["DBus"]
         )
-        ],
+    ],
     swiftLanguageVersions: [4]
 )

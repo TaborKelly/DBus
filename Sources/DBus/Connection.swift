@@ -44,12 +44,13 @@ public final class DBusConnection {
         dbus_connection_unref(internalPointer)
     }
 
-    /// Gets a connection to a remote address.
+    /// Gets a connection to a remote address. The reason that this isn't public is because you should use the one that
+    /// DBusManager gives you access to instead. That way it is integrated into the event loop.
     ///
     /// - Parameter address: The address to connect to.
     /// - Parameter shared: Whether the connection will be shared by subsequent callers,
     /// or a new dedicated connection should be created.
-    public init(address: String, shared: Bool = true) throws {
+    init(address: String, shared: Bool = true) throws {
 
         self.shared = shared
 
@@ -70,12 +71,13 @@ public final class DBusConnection {
         }
     }
 
-    /// Connects to a bus daemon and registers the client with it.
+    /// Connects to a bus daemon and registers the client with it. The reason that this isn't public is because you
+    /// should use the one that DBusManager gives you access to instead. That way it is integrated into the event loop.
     ///
     /// - Parameter busType: Bus type.
     /// - Parameter shared: Whether the connection will be shared by subsequent callers,
     /// or a new dedicated connection should be created.
-    public init(busType: DBusBusType, shared: Bool = true) throws {
+    init(busType: DBusBusType, shared: Bool = true) throws {
 
         self.shared = shared
 

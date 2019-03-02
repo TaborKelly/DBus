@@ -195,7 +195,7 @@ public final class DBusManager {
     }
 
     func addTimeout(timeout: OpaquePointer?) -> dbus_bool_t {
-        print("addTimeout()")
+        print("addTimeout(\(String(describing: timeout)))")
 
         let t = DBusTimeoutSource(dispatchQueue: dispatchQueue, timeout: timeout)
         guard let p = dbus_timeout_get_data(timeout) else {
@@ -209,18 +209,25 @@ public final class DBusManager {
     }
 
     func removeTimeout(timeout: OpaquePointer?) {
-        print("DBusManager.removeTimeout()")
+        print("DBusManager.removeTimeout(\(String(describing: timeout)))")
 
         guard let p = dbus_timeout_get_data(timeout) else {
             // This should never happen
             print("DBusManager.removeTimeout(): dbus_timeout_get_data() failed!")
             return
         }
+
+        guard let timeoutSource = timeouts[p] else {
+            print("DBusManager.removeTimeout(): failed to find timeout!")
+            return
+        }
+        timeoutSource.remove()
+
         timeouts[p] = nil
     }
 
     func timeoutToggled(timeout: OpaquePointer?) {
-        print("DBusManager.timeoutToggled()")
+        print("DBusManager.timeoutToggled(\(String(describing: timeout)))")
 
         guard let p = dbus_timeout_get_data(timeout) else {
             // This should never happen
@@ -228,11 +235,11 @@ public final class DBusManager {
             return
         }
 
-        guard let timeoutObject = timeouts[p] else {
+        guard let timeoutSource = timeouts[p] else {
             print("DBusManager.timeoutToggled(): failed to find watch!")
             return
         }
 
-        timeoutObject.toggle()
+        timeoutSource.toggle()
     }
 }

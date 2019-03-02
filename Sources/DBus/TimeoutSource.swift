@@ -32,8 +32,14 @@ public class DBusTimeoutSource {
         }
     }
 
+    func remove() {
+        disable()
+        // WARNING: I'm not sure this is enough to have the DispatchSourceTimer removed from the DispatchQueue
+        timerSource.cancel()
+    }
+
     func toggle() {
-        print("DBusTimeoutSource.toggle()")
+        print("DBusTimeoutSource.toggle(\(String(describing: timeout)))")
 
         if dbus_timeout_get_enabled(timeout) == 0 {
             disable()
@@ -43,7 +49,7 @@ public class DBusTimeoutSource {
     }
 
     private func enable() {
-        print("DBusTimeoutSource.enable()")
+        print("DBusTimeoutSource.enable(\(String(describing: timeout)))")
 
         if enabled == false {
             let intervalMilliseconds = dbus_timeout_get_interval(timeout)
@@ -58,7 +64,7 @@ public class DBusTimeoutSource {
     }
 
     private func disable() {
-        print("DBusTimeoutSource.disable()")
+        print("DBusTimeoutSource.disable(\(String(describing: timeout)))")
         if enabled == true {
             timerSource.suspend()
             enabled = false
@@ -66,7 +72,7 @@ public class DBusTimeoutSource {
     }
 
     private func fire() {
-        print("DBusTimeoutSource.fire()")
+        print("DBusTimeoutSource.fire(\(String(describing: timeout)))")
 
         let b = dbus_timeout_handle(timeout)
         if b == 0 {

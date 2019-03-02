@@ -7,6 +7,7 @@
 
 from gi.repository import GLib
 from pydbus import SessionBus
+from pydbus.generic import signal
 
 loop = GLib.MainLoop()
 
@@ -19,12 +20,18 @@ class EchoServer(object):
                     <arg type='s' name='s' direction='out'/>
                 </method>
                 <method name='Quit'/>
+                <signal name="foo">
+                    <arg type='s' name='s' direction='out'/>
+                </signal>
             </interface>
         </node>
     """
 
+    foo = signal()
+
     def s(self, s):
         print('s({})'.format(s))
+        self.foo("foo signal {}".format(s))
         return s
 
 bus = SessionBus()

@@ -115,6 +115,7 @@ public final class DBusManager {
     public let connection: DBusConnection
     private let dispatchSource: DBusDispatchSource
     private let dispatchQueue: DispatchQueue
+    public let filter: DBusFilter
     private var watches: [UnsafeMutableRawPointer:DBusWatchSource] = [:]
     private var timeouts: [UnsafeMutableRawPointer:DBusTimeoutSource] = [:]
 
@@ -124,6 +125,7 @@ public final class DBusManager {
         dispatchQueue = DispatchQueue(label: "com.racepointenergy.DBus.session", qos: .utility,
                                       attributes: []) // serial, because that's all we want
         connection = try DBusConnection(busType: .session)
+        filter = try DBusFilter(connection: connection)
         dispatchSource = try DBusDispatchSource(connection: connection, dispatchQueue: dispatchQueue)
 
         // Grap an UnsafeMutableRawPointer to self so that we can pass it into C land

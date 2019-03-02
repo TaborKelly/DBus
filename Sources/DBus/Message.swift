@@ -31,6 +31,7 @@ public final class DBusMessage {
 
     internal init(_ internalPointer: OpaquePointer) {
 
+        dbus_message_ref(internalPointer)
         self.internalPointer = internalPointer
     }
 

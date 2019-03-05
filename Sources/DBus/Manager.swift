@@ -152,6 +152,24 @@ public final class DBusManager {
         }
     }
 
+    public func getProperty(destination: String, objectPath: String,
+                            interfaceName: String, propertyName: String) throws -> DBusMessage? {
+        let message = try DBusMessage(destination: destination,
+                                      path: objectPath,
+                                      iface: "org.freedesktop.DBus.Properties",
+                                      method: "Get")
+        try message.append(contentsOf: [.string(interfaceName), .string(propertyName)])
+
+        guard let r = try connection.sendWithReply(message: message) else {
+            print("DBusManager.sendWithReply() failed!")
+            exit(1)
+        }
+        print("\(String(describing: r))")
+        r.block()
+
+        return r.replyMessage
+    }
+
     func addWatch(watch: OpaquePointer?) -> dbus_bool_t {
         print("DBusManager.addWatch()")
 

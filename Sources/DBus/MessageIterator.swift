@@ -81,6 +81,17 @@ extension DBusMessageIter {
 
             value = .struct(structure)
 
+        case .variant:
+            var elements = [DBusMessageArgument]()
+            recursiveIterate { elements.append($0) }
+
+            // Every variant should contain exacty one element, so this should always work.
+            guard let inner = elements.first else {
+                fatalError()
+            }
+
+            value = .variant(inner)
+
         default:
             fatalError()
         }
@@ -234,6 +245,11 @@ internal extension DBusMessageIter {
                 for element in structure {
                     try $0.append(argument: element)
                 }
+            }
+
+        case let .variant(variant):
+            try appendContainer(type: .variant, signature: DBusSignature([variant.type])) {
+                try $0.append(argument: variant)
             }
         }
     }

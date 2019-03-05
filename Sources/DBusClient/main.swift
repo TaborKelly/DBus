@@ -17,6 +17,19 @@ do {
                           fn: fooSignal)
     try manager.filter.addFilter(sf)
 
+    // get a property
+    guard let pm = try manager.getProperty(destination: "com.racepointenergy.DBus.EchoServer",
+                                           objectPath: "/com/racepointenergy/DBus/EchoServer",
+                                           interfaceName: "com.racepointenergy.DBus.EchoServer",
+                                           propertyName: "propertyS") else {
+        print("manager.getProperty failed!")
+        exit(1)
+    }
+    print(pm)
+    for mPrime in pm {
+        print(mPrime)
+    }
+
     let message = try DBusMessage(destination: "com.racepointenergy.DBus.EchoServer",
                                   path: "/com/racepointenergy/DBus/EchoServer",
                                   iface: "com.racepointenergy.DBus.EchoServer",

@@ -28,7 +28,7 @@ public enum DBusMessageArgument: Equatable {
 
     case array(Array)
     case `struct`(Structure)
-    //case variant
+    indirect case variant(DBusMessageArgument)
     //case dictionaryEntry
 }
 
@@ -53,6 +53,7 @@ public extension DBusMessageArgument {
         case .signature: return .signature
         case let .array(array): return .array(array.type)
         case let .struct(structure): return .struct(structure.type)
+        case .variant: return .variant
         }
     }
 }

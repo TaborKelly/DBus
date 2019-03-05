@@ -23,16 +23,23 @@ class EchoServer(object):
                 <signal name="foo">
                     <arg type='s' name='s' direction='out'/>
                 </signal>
+                <property name="propertyS" type="s" access="read"/>
             </interface>
         </node>
     """
-
     foo = signal()
+
+    def __init__(self):
+        self._propertyS = "foo"
 
     def s(self, s):
         print('s({})'.format(s))
         self.foo("foo signal {}".format(s))
         return s
+
+    @property
+    def propertyS(self):
+        return self._propertyS
 
 bus = SessionBus()
 bus.publish("com.racepointenergy.DBus.EchoServer", EchoServer())

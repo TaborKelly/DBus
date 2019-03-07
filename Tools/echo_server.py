@@ -15,9 +15,41 @@ class EchoServer(object):
     """
         <node>
             <interface name='com.racepointenergy.DBus.EchoServer'>
+                <method name='y'>
+                    <arg type='y' name='value' direction='in'/>
+                    <arg type='y' name='value' direction='out'/>
+                </method>
+                <method name='b'>
+                    <arg type='b' name='value' direction='in'/>
+                    <arg type='b' name='value' direction='out'/>
+                </method>
+                <method name='n'>
+                    <arg type='n' name='value' direction='in'/>
+                    <arg type='n' name='value' direction='out'/>
+                </method>
+                <method name='i'>
+                    <arg type='i' name='value' direction='in'/>
+                    <arg type='i' name='value' direction='out'/>
+                </method>
+                <method name='u'>
+                    <arg type='u' name='value' direction='in'/>
+                    <arg type='u' name='value' direction='out'/>
+                </method>
+                <method name='x'>
+                    <arg type='x' name='value' direction='in'/>
+                    <arg type='x' name='value' direction='out'/>
+                </method>
+                <method name='t'>
+                    <arg type='t' name='value' direction='in'/>
+                    <arg type='t' name='value' direction='out'/>
+                </method>
+                <method name='d'>
+                    <arg type='d' name='value' direction='in'/>
+                    <arg type='d' name='value' direction='out'/>
+                </method>
                 <method name='s'>
-                    <arg type='s' name='s' direction='in'/>
-                    <arg type='s' name='s' direction='out'/>
+                    <arg type='s' name='value' direction='in'/>
+                    <arg type='s' name='value' direction='out'/>
                 </method>
                 <method name='Quit'/>
                 <signal name="foo">
@@ -32,10 +64,42 @@ class EchoServer(object):
     def __init__(self):
         self._propertyS = "foo"
 
-    def s(self, s):
-        print('s({})'.format(s))
-        self.foo("foo signal {}".format(s))
-        return s
+    def y(self, value):
+        print('y({})'.format(value))
+        return value
+
+    def b(self, value):
+        print('b({})'.format(value))
+        return value
+
+    def n(self, value):
+        print('n({})'.format(value))
+        return value
+
+    def i(self, value):
+        print('i({})'.format(value))
+        return value
+
+    def u(self, value):
+        print('u({})'.format(value))
+        return value
+
+    def x(self, value):
+        print('x({})'.format(value))
+        return value
+
+    def t(self, value):
+        print('t({})'.format(value))
+        return value
+
+    def d(self, value):
+        print('d({})'.format(value))
+        return value
+
+    def s(self, value):
+        print('s({})'.format(value))
+        self.foo("foo signal {}".format(value))
+        return value
 
     @property
     def propertyS(self):

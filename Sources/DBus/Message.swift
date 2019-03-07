@@ -104,14 +104,14 @@ public final class DBusMessage {
     /// Append argument.
     public func append(_ argument: DBusMessageArgument) throws {
 
-        var iterator = DBusMessageIter(appending: self)
+        let iterator = DBusMessageIter(appending: self)
         try iterator.append(argument: argument)
     }
 
     /// Append contents of sequence.
     public func append <S: Sequence> (contentsOf sequence: S) throws where S.Element == DBusMessageArgument {
 
-        var iterator = DBusMessageIter(appending: self)
+        let iterator = DBusMessageIter(appending: self)
         try sequence.forEach { try iterator.append(argument: $0) }
     }
 

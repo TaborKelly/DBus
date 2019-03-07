@@ -8,16 +8,18 @@ let package = Package(
         .executable(name: "DBusClient", targets: ["DBusClient"]),
     ],
     dependencies: [
-        .package( url: "https://github.com/taborkelly/CDBus.git", .branch("master"))
+        .package( url: "https://github.com/taborkelly/CDBus.git", .branch("master")),
+        .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.8.0"),
+        .package(url: "https://github.com/IBM-Swift/LoggerAPI.git", from: "1.8.0"),
     ],
     targets: [
         .target(
             name: "DBus",
-            dependencies: [ ]
+            dependencies: ["LoggerAPI"]
         ),
         .target(
             name: "DBusClient",
-            dependencies: [ "DBus" ]
+            dependencies: ["DBus", "HeliumLogger", "LoggerAPI"]
         ),
         .testTarget(
             name: "DBusTests",

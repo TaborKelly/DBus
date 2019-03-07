@@ -9,18 +9,24 @@ import CDBus
 
 // MARK: - Iterating
 
-extension DBusMessageIter {
+class DBusMessageIter {
+    var iter: CDBus.DBusMessageIter
 
-    init(iterating message: DBusMessage) {
-
-        self.init()
-        dbus_message_iter_init(message.internalPointer, &self)
+    init() {
+        iter = CDBus.DBusMessageIter()
     }
+}
 
-    mutating func next() -> DBusMessageArgument? {
+extension DBusMessageIter {
+    convenience init(iterating message: DBusMessage) {
+        self.init()
+        dbus_message_iter_init(message.internalPointer, &iter)
+    }
+    
+    func next() -> DBusMessageArgument? {
 
         // make sure there is a valid element
-        guard let argumentType = DBusType(Int(dbus_message_iter_get_arg_type(&self)))
+        guard let argumentType = DBusType(Int(dbus_message_iter_get_arg_type(&iter)))
             else { return nil }
 
         let value: DBusMessageArgument
@@ -97,7 +103,7 @@ extension DBusMessageIter {
         }
 
         // move iterator to next element in the sequence
-        dbus_message_iter_next(&self)
+        dbus_message_iter_next(&iter)
 
         // return value
         return value
@@ -105,16 +111,16 @@ extension DBusMessageIter {
 
     /// Read a basic value into the provided pointer.
     @inline(__always)
-    private mutating func readBasic() -> DBusBasicValue {
+    private func readBasic() -> DBusBasicValue {
 
         var basicValue = DBusBasicValue()
         withUnsafeMutablePointer(to: &basicValue) {
-            dbus_message_iter_get_basic(&self, UnsafeMutableRawPointer($0))
+            dbus_message_iter_get_basic(&iter, UnsafeMutableRawPointer($0))
         }
         return basicValue
     }
 
-    private mutating func readString() -> String {
+    private func readString() -> String {
 
         guard let cString = readBasic().str
             else { fatalError("Nil string pointer") }
@@ -123,7 +129,7 @@ extension DBusMessageIter {
     }
 
     /// Recurses into a container value when reading values from a message.
-    private mutating func recursiveIterate(_ iterate: (DBusMessageArgument) throws -> ()) rethrows {
+    private func recursiveIterate(_ iterate: (DBusMessageArgument) throws -> ()) rethrows {
 
         /**
          Recurses into a container value when reading values from a message, initializing a sub-iterator to use for traversing the child values of the container.
@@ -131,17 +137,17 @@ extension DBusMessageIter {
          Note that this recurses into a value, not a type, so you can only recurse if the value exists. The main implication of this is that if you have for example an empty array of array of int32, you can recurse into the outermost array, but it will have no values, so you won't be able to recurse further. There's no array of int32 to recurse into.
          */
 
-        var subiterator = DBusMessageIter()
-        dbus_message_iter_recurse(&self, &subiterator)
+        let subiterator = DBusMessageIter()
+        dbus_message_iter_recurse(&iter, &subiterator.iter)
 
         while let element = subiterator.next() {
             try iterate(element)
         }
     }
 
-    private mutating func signature() throws -> DBusSignature {
+    private func signature() throws -> DBusSignature {
 
-        guard let cString = dbus_message_iter_get_signature(&self)
+        guard let cString = dbus_message_iter_get_signature(&iter)
             else { throw RuntimeError.generic("dbus_message_iter_get_signature() failed") }
 
         let string = String(cString: cString)
@@ -185,13 +191,12 @@ internal extension DBusMessageIter {
 internal extension DBusMessageIter {
 
     /// Initializes a DBusMessageIter for appending arguments to the end of a message.
-    init(appending message: DBusMessage) {
-
+    convenience init(appending message: DBusMessage) {
         self.init()
-        dbus_message_iter_init_append(message.internalPointer, &self)
+        dbus_message_iter_init_append(message.internalPointer, &iter)
     }
 
-    mutating func append(argument: DBusMessageArgument) throws {
+    func append(argument: DBusMessageArgument) throws {
 
         switch argument {
 
@@ -254,14 +259,14 @@ internal extension DBusMessageIter {
         }
     }
 
-    private mutating func append(_ basicValue: inout DBusBasicValue, _ type: DBusType) throws {
+    private func append(_ basicValue: inout DBusBasicValue, _ type: DBusType) throws {
 
         guard withUnsafePointer(to: &basicValue, {
-            Bool(dbus_message_iter_append_basic(&self, Int32(type.integerValue), UnsafeRawPointer($0)))
+            Bool(dbus_message_iter_append_basic(&iter, Int32(type.integerValue), UnsafeRawPointer($0)))
         }) else { throw RuntimeError.generic("dbus_message_iter_append_basic() failed") }
     }
 
-    private mutating func append(_ string: String, _ type: DBusType = .string) throws {
+    private func append(_ string: String, _ type: DBusType = .string) throws {
 
         try string.withCString {
             let cString = UnsafeMutablePointer<Int8>(mutating: $0)
@@ -273,7 +278,7 @@ internal extension DBusMessageIter {
     /**
      Appends a container-typed value to the message.
     */
-    private mutating func appendContainer(type: DBusType, signature: DBusSignature? = nil, container: (inout DBusMessageIter) throws -> ()) throws {
+    private func appendContainer(type: DBusType, signature: DBusSignature? = nil, container: (inout DBusMessageIter) throws -> ()) throws {
 
         var subIterator = DBusMessageIter()
 
@@ -281,10 +286,10 @@ internal extension DBusMessageIter {
          On success, you are required to append the contents of the container using the returned sub-iterator, and then call dbus_message_iter_close_container(). Container types are for example struct, variant, and array. For variants, the contained_signature should be the type of the single value inside the variant. For structs and dict entries, contained_signature should be NULL; it will be set to whatever types you write into the struct. For arrays, contained_signature should be the type of the array elements.
         */
 
-        guard Bool(dbus_message_iter_open_container(&self, Int32(type.integerValue), signature?.rawValue, &subIterator))
+        guard Bool(dbus_message_iter_open_container(&iter, Int32(type.integerValue), signature?.rawValue, &subIterator.iter))
             else { throw RuntimeError.generic("dbus_message_iter_open_container() failed") }
 
-        defer { dbus_message_iter_close_container(&self, &subIterator) }
+        defer { dbus_message_iter_close_container(&iter, &subIterator.iter) }
 
         try container(&subIterator)
     }

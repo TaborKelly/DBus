@@ -10,6 +10,10 @@ final public class DBusEncoder {
         Log.entry("")
     }
 
+    deinit {
+        Log.entry("")
+    }
+
     /**
      A dictionary you use to customize the encoding process
      by providing contextual information.
@@ -24,9 +28,9 @@ final public class DBusEncoder {
      - Throws: `EncodingError.invalidValue(_:_:)`
                 if the value can't be encoded as a DBus object.
      */
-    public func encode(_ value: Encodable, to: DBusMessage) throws {
+    public func encode(_ value: Encodable, to: DBusMessage, signature: String) throws {
         Log.entry("")
-        let encoder = try _DBusEncoder(to: to)
+        let encoder = try _DBusEncoder(to: to, signature: signature)
         encoder.userInfo = self.userInfo
 
         try value.encode(to: encoder)
@@ -45,16 +49,19 @@ class _DBusEncoder {
 
     var firstContainer = true
     fileprivate var container: _DBusEncodingContainer?
-    let iter: DBusMessageIter
+    let msgIter: DBusMessageIter
+    let sigIter: DBusSignatureIter
 
-    init(to: DBusMessage) throws {
+    init(to: DBusMessage, signature: String) throws {
         Log.entry("")
-        iter = DBusMessageIter(appending: to)
+        msgIter = DBusMessageIter(appending: to)
+        sigIter = try DBusSignatureIter(signature)
     }
 
-    init(iter: DBusMessageIter) throws {
+    init(msgIter: DBusMessageIter, sigIter: DBusSignatureIter) throws {
         Log.entry("")
-        self.iter = iter
+        self.msgIter = msgIter
+        self.sigIter = sigIter
     }
 }
 
@@ -68,7 +75,7 @@ extension _DBusEncoder: Encoder {
         Log.entry("")
         assertCanCreateContainer()
 
-        let container = KeyedContainer<Key>(codingPath: self.codingPath, userInfo: self.userInfo, iter: iter)
+        let container = KeyedContainer<Key>(codingPath: self.codingPath, userInfo: self.userInfo, msgIter: msgIter, sigIter: sigIter)
         self.container = container
 
         return KeyedEncodingContainer(container)
@@ -78,7 +85,7 @@ extension _DBusEncoder: Encoder {
         Log.entry("")
         assertCanCreateContainer()
 
-        let container = UnkeyedContainer(codingPath: self.codingPath, userInfo: self.userInfo, iter: iter)
+        let container = UnkeyedContainer(codingPath: self.codingPath, userInfo: self.userInfo, msgIter: msgIter, sigIter: sigIter)
         self.container = container
 
         return container
@@ -88,7 +95,7 @@ extension _DBusEncoder: Encoder {
         Log.entry("")
         assertCanCreateContainer()
 
-        let container = SingleValueContainer(codingPath: self.codingPath, userInfo: self.userInfo, iter: iter)
+        let container = SingleValueContainer(codingPath: self.codingPath, userInfo: self.userInfo, msgIter: msgIter, sigIter: sigIter)
         self.container = container
 
         return container

@@ -1,5 +1,6 @@
 import Foundation
 import DBus
+import AnyCodable
 import HeliumLogger
 import LoggerAPI
 
@@ -18,7 +19,7 @@ func fooSignal(message: DBusMessage) {
 }
 
 // swapTwoValues<T>(_ a: inout T, _ b: inout T)
-func send<T: Encodable>(manager: DBusManager, method: String, _ toSend: T) throws {
+func send<T: Encodable>(manager: DBusManager, method: String, _ toSend: T, signature: String) throws {
     Log.entry("")
 
     let message = try DBusMessage(destination: "com.racepointenergy.DBus.EchoServer",
@@ -28,7 +29,7 @@ func send<T: Encodable>(manager: DBusManager, method: String, _ toSend: T) throw
     // try message.append(contentsOf: [.string("Test String")])
     let encoder = DBusEncoder()
     // try encoder.encode("Test String", to: message)
-    try encoder.encode(toSend, to: message)
+    try encoder.encode(toSend, to: message, signature: signature)
     for mPrime in message {
         print(mPrime)
     }
@@ -71,7 +72,7 @@ do {
     for mPrime in pm {
         print(mPrime)
     }
-
+/*
     try send(manager: manager, method: "y", UInt8(8))
     try send(manager: manager, method: "b", true)
     try send(manager: manager, method: "n", Int16(-16))
@@ -80,7 +81,20 @@ do {
     try send(manager: manager, method: "x", Int64(-64))
     try send(manager: manager, method: "t", UInt64(64))
     try send(manager: manager, method: "s", "Hello World!")
-    try send(manager: manager, method: "d", Double(6.0221409e+23))
+    try send(manager: manager, method: "d", Double(6.0221409e+23)) */
+    let dictionary: [String: AnyEncodable] = [
+        "boolean": true,
+        "integer": 1,
+        "double": 3.14159265358979323846,
+        "string": "string",
+        "array": [1, 2, 3],
+        "nested": [
+            "a": "alpha",
+            "b": "bravo",
+            "c": "charlie"
+        ]
+    ]
+    try send(manager: manager, method: "array_s", ["Foo", "Bar", "Baz"], signature: "as")
 
     RunLoop.main.run() //(until: Date(timeIntervalSinceNow: 0.1))
 } catch {

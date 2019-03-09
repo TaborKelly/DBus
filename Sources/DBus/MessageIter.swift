@@ -1,5 +1,5 @@
 //
-//  MessageIterator.swift
+//  MessageItr.swift
 //  DBus
 //
 //  Created by Alsey Coleman Miller on 10/12/18.
@@ -21,6 +21,32 @@ extension DBusMessageIter {
     convenience init(iterating message: DBusMessage) {
         self.init()
         dbus_message_iter_init(message.internalPointer, &iter)
+    }
+
+    func openContainer(containerType: DBusType, containedSignature: String) throws -> DBusMessageIter {
+        let sub = DBusMessageIter()
+        let b = Bool(dbus_message_iter_open_container(&iter, Int32(containerType.integerValue),
+                                                      containedSignature, &sub.iter))
+        if b == false {
+            throw RuntimeError.generic("dbus_message_iter_open_container() failed!")
+        }
+
+        return sub
+    }
+
+    // When writing a message, recurse into a container type
+    func recurse() throws -> DBusMessageIter {
+        guard let t = DBusType(dbus_message_iter_get_arg_type(&iter)) else {
+            throw RuntimeError.generic("dbus_message_iter_get_arg_type() failed!")
+        }
+        if t.isContainer == false {
+            throw RuntimeError.generic("Can't recures into a \(t)")
+        }
+
+        let sub = DBusMessageIter()
+        dbus_message_iter_recurse(&iter, &sub.iter)
+
+        return sub
     }
     
     func next() -> DBusMessageArgument? {

@@ -51,6 +51,10 @@ class EchoServer(object):
                     <arg type='s' name='value' direction='in'/>
                     <arg type='s' name='value' direction='out'/>
                 </method>
+                <method name='array_s'>
+                    <arg type='as' name='value' direction='in'/>
+                    <arg type='as' name='value' direction='out'/>
+                </method>
                 <method name='Quit'/>
                 <signal name="foo">
                     <arg type='s' name='s' direction='out'/>
@@ -63,6 +67,10 @@ class EchoServer(object):
 
     def __init__(self):
         self._propertyS = "foo"
+
+    #
+    # Basic types
+    #
 
     def y(self, value):
         print('y({})'.format(value))
@@ -96,9 +104,20 @@ class EchoServer(object):
         print('d({})'.format(value))
         return value
 
+    #
+    # String types
+    #
+
     def s(self, value):
         print('s({})'.format(value))
         self.foo("foo signal {}".format(value))
+        return value
+
+    #
+    # Container types
+    #
+    def array_s(self, value):
+        print('array_s({})'.format(value))
         return value
 
     @property

@@ -2,6 +2,31 @@ import Foundation
 import CDBus
 import LoggerAPI
 
+class DummySingleValueEncodingContainer: SingleValueEncodingContainer {
+    var codingPath: [CodingKey]
+    let problem: String
+
+    init(codingPath: [CodingKey], problem: String) {
+        Log.entry("")
+        self.codingPath = codingPath
+        self.problem = problem
+    }
+
+    func _throw() throws {
+        let context = EncodingError.Context(codingPath: self.codingPath, debugDescription: problem)
+        let value: Any? = nil
+        throw EncodingError.invalidValue(value as Any, context)
+    }
+
+    func encodeNil() throws {
+        try _throw()
+    }
+
+    func encode<T>(_ value: T) throws where T : Encodable {
+        try _throw()
+    }
+}
+
 extension _DBusEncoder {
     final class SingleValueContainer {
         fileprivate var canEncodeNewValue = true
@@ -16,13 +41,20 @@ extension _DBusEncoder {
 
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
-        let iter: DBusMessageIter
+        let msgIter: DBusMessageIter
+        let sigIter: DBusSignatureIter
 
-        init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], iter: DBusMessageIter) {
+        init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], msgIter: DBusMessageIter,
+             sigIter: DBusSignatureIter) /* TODO: REVISIT, is this necessary? */ {
             Log.entry("")
             self.codingPath = codingPath
             self.userInfo = userInfo
-            self.iter = iter
+            self.msgIter = msgIter
+            self.sigIter = sigIter
+        }
+
+        deinit {
+            Log.entry("")
         }
     }
 }
@@ -42,7 +74,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: nil)
         defer { self.canEncodeNewValue = false }
 
-        try iter.append(argument: .boolean(value))
+        try msgIter.append(argument: .boolean(value))
     }
 
     func encode(_ value: String) throws {
@@ -50,7 +82,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: value)
         defer { self.canEncodeNewValue = false }
 
-        try iter.append(argument: .string(value))
+        try msgIter.append(argument: .string(value))
     }
 
     func encode(_ value: Double) throws {
@@ -58,7 +90,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: value)
         defer { self.canEncodeNewValue = false }
 
-        try iter.append(argument: .double(value))
+        try msgIter.append(argument: .double(value))
     }
 
     func encode(_ value: Float) throws {
@@ -102,7 +134,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: value)
         defer { self.canEncodeNewValue = false }
 
-        try iter.append(argument: .int16(value))
+        try msgIter.append(argument: .int16(value))
     }
 
     func encode(_ value: Int32) throws {
@@ -110,7 +142,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: value)
         defer { self.canEncodeNewValue = false }
 
-        try iter.append(argument: .int32(value))
+        try msgIter.append(argument: .int32(value))
     }
 
     func encode(_ value: Int64) throws {
@@ -118,7 +150,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: value)
         defer { self.canEncodeNewValue = false }
 
-        try iter.append(argument: .int64(value))
+        try msgIter.append(argument: .int64(value))
     }
 
     func encode(_ value: UInt8) throws {
@@ -126,7 +158,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: value)
         defer { self.canEncodeNewValue = false }
 
-        try iter.append(argument: .byte(value))
+        try msgIter.append(argument: .byte(value))
     }
 
     func encode(_ value: UInt16) throws {
@@ -134,7 +166,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: value)
         defer { self.canEncodeNewValue = false }
 
-        try iter.append(argument: .uint16(value))
+        try msgIter.append(argument: .uint16(value))
     }
 
     func encode(_ value: UInt32) throws {
@@ -142,7 +174,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: value)
         defer { self.canEncodeNewValue = false }
 
-        try iter.append(argument: .uint32(value))
+        try msgIter.append(argument: .uint32(value))
     }
 
     func encode(_ value: UInt64) throws {
@@ -150,7 +182,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: value)
         defer { self.canEncodeNewValue = false }
 
-        try iter.append(argument: .uint64(value))
+        try msgIter.append(argument: .uint64(value))
     }
 
     func encode<T>(_ value: T) throws where T : Encodable {
@@ -158,7 +190,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         try checkCanEncode(value: value)
         defer { self.canEncodeNewValue = false }
 
-        let encoder = try _DBusEncoder(iter: iter)
+        let encoder = try _DBusEncoder(msgIter: msgIter, sigIter: sigIter)
         try value.encode(to: encoder)
     }
 }

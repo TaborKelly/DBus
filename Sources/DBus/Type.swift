@@ -132,7 +132,11 @@ internal extension DBusType {
         assert(isValid)
     }
 
-    var integerValue: Int {
-        return Int(rawValue.utf8.first!)
+    init?(_ integerValue: Int32) {
+        self.init(Int(integerValue))
+    }
+
+    var integerValue: Int32 {
+        return Int32(rawValue.utf8.first!)
     }
 }

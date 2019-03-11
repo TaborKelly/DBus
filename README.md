@@ -2,8 +2,14 @@
 Swift library for D-Bus
 
 ## Notes
-- DBus does not support nil values
+- DBus does not support nil values. If we encounter one in a keyed container (probably an `a{sv}`) we will simply ignore it. If we encounter it in any other context we throw an error. Perhaps this could be relaxed in some circumstances (like an `av`).
 - DBus does not support Floats, but it does support Doubles. Floats will automatically be converted to Doubles when encoding.
+
+## TODO:
+- Complete Encodable support.
+- Decodable support.
+- Server side support.
+- Better test harness.
 
 ## Licenses
 Portions of this code (`AnyCodingKey.wift`, `Encoder.swift`, and `SingleValueEncodingContainer.wift`) are based off of [MessagePack](https://github.com/Flight-School/MessagePack) by Flight-School/Read Evaluate Press:

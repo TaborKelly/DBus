@@ -30,9 +30,11 @@ func send<T: Encodable>(manager: DBusManager, method: String, _ toSend: T, signa
     let encoder = DBusEncoder()
     // try encoder.encode("Test String", to: message)
     try encoder.encode(toSend, to: message, signature: signature)
+    /* The iterator is broken for maps.
     for mPrime in message {
         print(mPrime)
     }
+     */
 
     // TODO: FIXME. libdbus makes no promises about multithreading. We should be sending from the DBusManager
     // dispatch queue.
@@ -47,9 +49,11 @@ func send<T: Encodable>(manager: DBusManager, method: String, _ toSend: T, signa
         exit(1)
     }
     print("\(String(describing: m))")
+    /* The iterator is broken for maps
     for mPrime in m {
         print(mPrime)
     }
+     */
 }
 
 do {
@@ -83,6 +87,10 @@ do {
     try send(manager: manager, method: "d", Double(6.0221409e+23), signature: "d")
     try send(manager: manager, method: "ay", [8, 6, 7, 5, 3, 0, 9], signature: "ay")
     try send(manager: manager, method: "array_s", ["Foo", "Bar", "Baz"], signature: "as")
+    let asi: [String: Int] = [ "zero": 0, "one": 1, "two": 2, "three": 3 ]
+    try send(manager: manager, method: "asi", asi, signature: "a{si}")
+    let ass: [String: String] = [ "Lorem": "ipsum", "dolor": "sit", "amet,": "consectetur", "adipiscing": "elit,"]
+    try send(manager: manager, method: "ass", ass, signature: "a{ss}")
     /*
     let dictionary: [String: AnyEncodable] = [
         "boolean": true,

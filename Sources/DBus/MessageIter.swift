@@ -23,7 +23,12 @@ extension DBusMessageIter {
         dbus_message_iter_init(message.internalPointer, &iter)
     }
 
-    func openContainer(containerType: DBusType, containedSignature: String) throws -> DBusMessageIter {
+    func openContainer(containerType: DBusType,
+                       // For variants, the contained_signature should be the type of the single value inside the
+                       // variant. For structs and dict entries, contained_signature should be NULL; it will be set to
+                       // whatever types you write into the struct. For arrays, contained_signature should be the type
+                       // of the array elements.
+                       containedSignature: String?) throws -> DBusMessageIter {
         let sub = DBusMessageIter()
         let b = Bool(dbus_message_iter_open_container(&iter, Int32(containerType.integerValue),
                                                       containedSignature, &sub.iter))

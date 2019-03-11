@@ -59,6 +59,14 @@ class EchoServer(object):
                     <arg type='as' name='value' direction='in'/>
                     <arg type='as' name='value' direction='out'/>
                 </method>
+                <method name='asi'>
+                    <arg type='a{si}' name='value' direction='in'/>
+                    <arg type='a{si}' name='value' direction='out'/>
+                </method>
+                <method name='ass'>
+                    <arg type='a{ss}' name='value' direction='in'/>
+                    <arg type='a{ss}' name='value' direction='out'/>
+                </method>
                 <method name='Quit'/>
                 <signal name="foo">
                     <arg type='s' name='s' direction='out'/>
@@ -126,6 +134,14 @@ class EchoServer(object):
 
     def array_s(self, value):
         print('array_s({})'.format(value))
+        return value
+
+    def asi(self, value):
+        print('asi({})'.format(value))
+        return value
+
+    def ass(self, value):
+        print('ass({})'.format(value))
         return value
 
     @property

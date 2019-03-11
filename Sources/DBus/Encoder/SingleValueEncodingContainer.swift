@@ -59,49 +59,23 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
     //
     // The actualy DBus encoding happens here
     //
-    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter) throws {
-        guard let value = self.storage else {
-            throw RuntimeError.generic("SingleValueContainer.dbusEncode: storage is nil!")
+
+    // This is exposed so that KeyedEncodingContainer can use it
+    static func dbusEncodeBasic(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, codingPath: [CodingKey],
+                                _ value: String) throws {
+        Log.entry("")
+
+        let t = try sigIter.getCurrentType()
+        if t != .string {
+            throw RuntimeError.generic("Can't encode type String because DBus signature says \(t) for path \(codingPath)")
         }
 
-        switch (value.value) {
-        case is (Void):
-            throw RuntimeError.generic("SingleValueContainer.dbusEncode: value.value is nil!")
-        case let (v as Bool):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as Int):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as Int8):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as Int16):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as Int32):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as Int64):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as UInt):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as UInt8):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as UInt16):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as UInt32):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as UInt64):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as Float):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as Double):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-        case let (v as String):
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, v)
-
-        default:
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, value)
-        }
+        try msgIter.append(argument: .string(value))
     }
 
-    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: Bool) throws {
+    // This is exposed so that KeyedEncodingContainer can use it
+    static func dbusEncodeBasic(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, codingPath: [CodingKey],
+                                _ value: Bool) throws {
         Log.entry("")
 
         let t = try sigIter.getCurrentType()
@@ -112,18 +86,20 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         try msgIter.append(argument: .boolean(value))
     }
 
-    func dbusEncode<T>(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: T) throws where T : BinaryInteger & Encodable {
+    // This is exposed so that KeyedEncodingContainer can use it
+    static func dbusEncodeBasic<T>(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, codingPath: [CodingKey],
+                                   _ value: T) throws where T : BinaryInteger & Encodable {
         Log.entry("")
 
         let t = try sigIter.getCurrentType()
         if t != .byte &&
-           t != .int16 &&
-           t != .uint16 &&
-           t != .int32 &&
-           t != .uint32 &&
-           t != .int64 &&
-           t != .uint64 &&
-           t != .fileDescriptor {
+            t != .int16 &&
+            t != .uint16 &&
+            t != .int32 &&
+            t != .uint32 &&
+            t != .int64 &&
+            t != .uint64 &&
+            t != .fileDescriptor {
             throw RuntimeError.generic("Can't encode type BinaryInteger because DBus signature says \(t) for path \(codingPath)")
         }
 
@@ -149,15 +125,14 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
                 throw RuntimeError.generic("Could not encode \(t) as a uint16 for path \(codingPath)")
             }
 
-        // TODO: Revisit .fileDescriptor. This may be platform dependant.
-        case .int32, .fileDescriptor:
+        case .int32:
             if let int32 = Int32(exactly: value) {
                 try msgIter.append(argument: .int32(int32))
             } else {
                 throw RuntimeError.generic("Could not encode \(t) as a int32 for path \(codingPath)")
             }
 
-        case .uint32:
+        case .uint32, .fileDescriptor:
             if let uint32 = UInt32(exactly: value) {
                 try msgIter.append(argument: .uint32(uint32))
             } else {
@@ -183,6 +158,89 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         }
     }
 
+    // This is exposed so that KeyedEncodingContainer can use it
+    static func dbusEncodeBasic(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, codingPath: [CodingKey],
+                                _ value: Double) throws {
+        Log.entry("")
+
+        let t = try sigIter.getCurrentType()
+        if t != .double {
+            throw RuntimeError.generic("Can't encode type Double because DBus signature says \(t) for path \(codingPath)")
+        }
+
+        try msgIter.append(argument: .double(value))
+    }
+
+    // This is exposed so that KeyedEncodingContainer can use it
+    static func dbusEncodeBasic(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, codingPath: [CodingKey],
+                                _ value: Float) throws {
+        Log.entry("")
+
+        let t = try sigIter.getCurrentType()
+        if t != .double {
+            throw RuntimeError.generic("Can't encode type Float because DBus signature says \(t) for path \(codingPath)")
+        }
+
+        let double = Double(value)
+        try msgIter.append(argument: .double(double))
+    }
+
+    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter) throws {
+        guard let value = self.storage else {
+            throw RuntimeError.generic("SingleValueContainer.dbusEncode: storage is nil!")
+        }
+
+        switch (value.value) {
+        case is (Void):
+            throw RuntimeError.generic("SingleValueContainer.dbusEncode: value.value is nil!")
+        case let (v as Bool):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as Int):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as Int8):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as Int16):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as Int32):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as Int64):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as UInt):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as UInt8):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as UInt16):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as UInt32):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as UInt64):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as Float):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as Double):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case let (v as String):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+
+        default:
+            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, value)
+        }
+    }
+
     func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: Double) throws {
         Log.entry("")
 
@@ -204,17 +262,6 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         let double = Double(value)
         try msgIter.append(argument: .double(double))
-    }
-
-    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: String) throws {
-        Log.entry("")
-
-        let t = try sigIter.getCurrentType()
-        if t != .string {
-            throw RuntimeError.generic("Can't encode type String because DBus signature says \(t) for path \(codingPath)")
-        }
-
-        try msgIter.append(argument: .string(value))
     }
 
     func dbusEncode<T>(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: T) throws where T : Encodable {

@@ -2,78 +2,22 @@ import Foundation
 import CDBus
 import LoggerAPI
 
-class DummyKeyedEncodingContainer<Key> where Key: CodingKey {
-    var codingPath: [CodingKey]
-    var count: Int = 0
-    let problem: String
-
-    init(codingPath: [CodingKey], problem: String) {
-        Log.entry("")
-        self.codingPath = codingPath
-        self.problem = problem
-    }
-
-    func nestedCodingPath(forKey key: CodingKey) -> [CodingKey] {
-        Log.entry("")
-        return self.codingPath + [key]
-    }
-}
-
-extension DummyKeyedEncodingContainer: KeyedEncodingContainerProtocol {
-    func _throw() throws {
-        let context = EncodingError.Context(codingPath: self.codingPath, debugDescription: problem)
-        let value: Any? = nil
-        throw EncodingError.invalidValue(value as Any, context)
-    }
-
-    func encodeNil(forKey key: Key) throws {
-        try _throw()
-    }
-
-    func encode<T>(_ value: T, forKey key: Key) throws where T : Encodable {
-        try _throw()
-    }
-
-    func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type, forKey key: Key) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {
-        let container = DummyKeyedEncodingContainer<NestedKey>(codingPath: self.nestedCodingPath(forKey: key),
-                                                               problem: self.problem)
-        return KeyedEncodingContainer(container)
-    }
-
-    func nestedUnkeyedContainer(forKey key: Key) -> UnkeyedEncodingContainer {
-        return DummyUnkeyedEncodingContainer(codingPath: self.codingPath, problem: self.problem)
-    }
-
-    func superEncoder() -> Encoder {
-        fatalError("Unimplemented") // FIXME
-    }
-
-    func superEncoder(forKey key: Key) -> Encoder {
-        fatalError("Unimplemented") // FIXME
-    }
-
-}
-
 extension _DBusEncoder {
     final class KeyedContainer<Key> where Key: CodingKey {
-        // private var storage: [AnyCodingKey: _DBusEncodingContainer] = [:]
+        private var storage: [AnyCodingKey: _DBusEncodingContainer] = [:]
 
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
-        let msgIter: DBusMessageIter
-        let sigIter: DBusSignatureIter
 
         func nestedCodingPath(forKey key: CodingKey) -> [CodingKey] {
             Log.entry("")
             return self.codingPath + [key]
         }
 
-        init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], msgIter: DBusMessageIter, sigIter: DBusSignatureIter) {
+        init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any]) {
             Log.entry("")
             self.codingPath = codingPath
             self.userInfo = userInfo
-            self.msgIter = msgIter
-            self.sigIter = sigIter
         }
 
         deinit {
@@ -85,38 +29,36 @@ extension _DBusEncoder {
 extension _DBusEncoder.KeyedContainer: KeyedEncodingContainerProtocol {
     func encodeNil(forKey key: Key) throws {
         Log.entry("")
-        var container = self.nestedSingleValueContainer(forKey: key)
-        try container.encodeNil()
+
+        // We can't enocde a nil value in DBus, but we might get them for keyed containers. Go ahead and return without
+        // encoding the value as that is the best that we can do.
     }
 
     func encode<T>(_ value: T, forKey key: Key) throws where T : Encodable {
         Log.entry("")
-        var container = self.nestedSingleValueContainer(forKey: key)
-        try container.encode(value)
-    }
 
-    private func nestedSingleValueContainer(forKey key: Key) -> SingleValueEncodingContainer {
-        Log.entry("")
         let container = _DBusEncoder.SingleValueContainer(codingPath: self.nestedCodingPath(forKey: key),
-                                                          userInfo: self.userInfo, msgIter: msgIter, sigIter: sigIter)
-        // self.storage[AnyCodingKey(key)] = container
-        return container
+                                                          userInfo: self.userInfo)
+        self.storage[AnyCodingKey(key)] = container
+
+        try container.encode(value)
     }
 
     func nestedUnkeyedContainer(forKey key: Key) -> UnkeyedEncodingContainer {
         Log.entry("")
         let container = _DBusEncoder.UnkeyedContainer(codingPath: self.nestedCodingPath(forKey: key),
-                                                      userInfo: self.userInfo, msgIter: msgIter, sigIter: sigIter)
-        // self.storage[AnyCodingKey(key)] = container
+                                                      userInfo: self.userInfo)
+        self.storage[AnyCodingKey(key)] = container
 
         return container
     }
 
     func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type, forKey key: Key) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {
         Log.entry("")
+
         let container = _DBusEncoder.KeyedContainer<NestedKey>(codingPath: self.nestedCodingPath(forKey: key),
-                                                               userInfo: self.userInfo, msgIter: msgIter, sigIter: sigIter)
-        // self.storage[AnyCodingKey(key)] = container
+                                                               userInfo: self.userInfo)
+        self.storage[AnyCodingKey(key)] = container
 
         return KeyedEncodingContainer(container)
     }
@@ -133,4 +75,61 @@ extension _DBusEncoder.KeyedContainer: KeyedEncodingContainerProtocol {
 }
 
 extension _DBusEncoder.KeyedContainer: _DBusEncodingContainer {
+    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter) throws {
+        // First do some house cleaning and type checking
+        let sigArrayIter = try sigIter.recurse()
+        let t = try sigIter.getCurrentType()
+        switch t {
+        case .array:
+            break
+        default:
+            throw RuntimeError.generic("_DBusEncoder.KeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)")
+        }
+        // subT needs to contain a dict
+        let subT = try sigArrayIter.getCurrentType()
+        switch subT {
+        case .dictionaryEntry:
+            break
+        default:
+            throw RuntimeError.generic("_DBusEncoder.KeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)")
+        }
+        let sigDictIter = try sigArrayIter.recurse()
+        let sigValueIter = try sigArrayIter.recurse()
+        if sigValueIter.next() == false {
+            throw RuntimeError.generic("_DBusEncoder.KeyedContainer.dbusEncode() failed to deduce value type for path \(codingPath)")
+        }
+
+        // Then actually open the array
+        let msgArrayIter = try msgIter.openContainer(containerType: .array, containedSignature: sigArrayIter.getSignature())
+
+        for c in storage {
+            // Then open a dict
+            let msgDictIter = try msgArrayIter.openContainer(containerType: .dictionaryEntry,
+                                                             containedSignature: nil)
+
+            try encodeKey(msgIter: msgDictIter, sigIter: sigDictIter, c.key)
+            try encodeValue(msgIter: msgDictIter, sigIter: sigValueIter, c.value)
+
+            // Close the dict
+            let b = Bool(dbus_message_iter_close_container(&msgArrayIter.iter, &msgDictIter.iter))
+            if b == false {
+                throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.KeyedContainer.dbusEncode()")
+            }
+        }
+
+        // Finally, close the array
+        let b = Bool(dbus_message_iter_close_container(&msgIter.iter, &msgArrayIter.iter))
+        if b == false {
+            throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.KeyedContainer.dbusEncode()")
+        }
+    }
+
+    func encodeKey(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ key: AnyCodingKey) throws {
+        try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                              codingPath: codingPath, key.stringValue)
+    }
+
+    func encodeValue(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: _DBusEncodingContainer) throws {
+        try value.dbusEncode(msgIter: msgIter, sigIter: sigIter)
+    }
 }

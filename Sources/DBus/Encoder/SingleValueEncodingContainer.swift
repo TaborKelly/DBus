@@ -183,6 +183,29 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         }
     }
 
+    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: Double) throws {
+        Log.entry("")
+
+        let t = try sigIter.getCurrentType()
+        if t != .double {
+            throw RuntimeError.generic("Can't encode type Double because DBus signature says \(t) for path \(codingPath)")
+        }
+
+        try msgIter.append(argument: .double(value))
+    }
+
+    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: Float) throws {
+        Log.entry("")
+
+        let t = try sigIter.getCurrentType()
+        if t != .double {
+            throw RuntimeError.generic("Can't encode type Float because DBus signature says \(t) for path \(codingPath)")
+        }
+
+        let double = Double(value)
+        try msgIter.append(argument: .double(double))
+    }
+
     func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: String) throws {
         Log.entry("")
 

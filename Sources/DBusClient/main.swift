@@ -74,18 +74,16 @@ do {
     }
     try send(manager: manager, method: "b", true, signature: "b")
     try send(manager: manager, method: "s", "Hello World!", signature: "s")
-    try send(manager: manager, method: "y", UInt8(8), signature: "y")
-    try send(manager: manager, method: "n", Int16(-16), signature: "n")
-    try send(manager: manager, method: "i", Int32(-32), signature: "i")
-    try send(manager: manager, method: "u", UInt32(32), signature: "u")
-    try send(manager: manager, method: "x", Int64(-64), signature: "x")
-    try send(manager: manager, method: "t", UInt64(64), signature: "t")
+    try send(manager: manager, method: "y", 8, signature: "y")
+    try send(manager: manager, method: "n", -16, signature: "n")
+    try send(manager: manager, method: "i", -32, signature: "i")
+    try send(manager: manager, method: "u", 32, signature: "u")
+    try send(manager: manager, method: "x", -64, signature: "x")
+    try send(manager: manager, method: "t", 64, signature: "t")
+    try send(manager: manager, method: "d", Double(6.0221409e+23), signature: "d")
+    try send(manager: manager, method: "ay", [8, 6, 7, 5, 3, 0, 9], signature: "ay")
+    try send(manager: manager, method: "array_s", ["Foo", "Bar", "Baz"], signature: "as")
     /*
-    try send(manager: manager, method: "b", true)
-
-
-    try send(manager: manager, method: "s", "Hello World!")
-    try send(manager: manager, method: "d", Double(6.0221409e+23)) */
     let dictionary: [String: AnyEncodable] = [
         "boolean": true,
         "integer": 1,
@@ -98,10 +96,7 @@ do {
             "c": "charlie"
         ]
     ]
-    let a = AnyCodable(true)
-    print(a)
-    print(a.value)
-    // try send(manager: manager, method: "array_s", ["Foo", "Bar", "Baz"], signature: "as")
+ */
 
     RunLoop.main.run() //(until: Date(timeIntervalSinceNow: 0.1))
 } catch {

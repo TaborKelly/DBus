@@ -51,6 +51,10 @@ class EchoServer(object):
                     <arg type='s' name='value' direction='in'/>
                     <arg type='s' name='value' direction='out'/>
                 </method>
+                <method name='ay'>
+                    <arg type='ay' name='value' direction='in'/>
+                    <arg type='ay' name='value' direction='out'/>
+                </method>
                 <method name='array_s'>
                     <arg type='as' name='value' direction='in'/>
                     <arg type='as' name='value' direction='out'/>
@@ -116,6 +120,10 @@ class EchoServer(object):
     #
     # Container types
     #
+    def ay(self, value):
+        print('ay({})'.format(value))
+        return value
+
     def array_s(self, value):
         print('array_s({})'.format(value))
         return value

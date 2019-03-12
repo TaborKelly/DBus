@@ -67,6 +67,15 @@ class EchoServer(object):
                     <arg type='a{ss}' name='value' direction='in'/>
                     <arg type='a{ss}' name='value' direction='out'/>
                 </method>
+                <method name='asv'>
+                    <arg type='a{sv}' name='value' direction='in'/>
+                </method>
+                <method name='av'>
+                    <arg type='av' name='value' direction='in'/>
+                </method>
+                <method name='v'>
+                    <arg type='v' name='value' direction='in'/>
+                </method>
                 <method name='Quit'/>
                 <signal name="foo">
                     <arg type='s' name='s' direction='out'/>
@@ -143,6 +152,21 @@ class EchoServer(object):
     def ass(self, value):
         print('ass({})'.format(value))
         return value
+
+    # Unfortunately pydbus will strip the data from its variant :(
+    # so we can't easly send it back.
+    def asv(self, value):
+        print('asv({})'.format(value))
+
+    # Unfortunately pydbus will strip the data from its variant :(
+    # so we can't easly send it back.
+    def av(self, value):
+        print('av({})'.format(value))
+
+    # Unfortunately pydbus will strip the data from its variant :(
+    # so we can't easly send it back.
+    def v(self, value):
+        print('v({})'.format(value))
 
     @property
     def propertyS(self):

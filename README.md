@@ -1,18 +1,29 @@
 # DBus
 Swift library for D-Bus
 
+## Logging
+This library uses IBM's HeliumLogger. If you wish to see debug logs do something like this:
+```
+import HeliumLogger
+import LoggerAPI
+
+HeliumLogger.use(.debug) // For even more debug replace .debug with .entry
+```
+
 ## Notes
-- DBus does not support nil values. If we encounter one in a keyed container (probably an `a{sv}`) we will simply ignore it. If we encounter it in any other context we throw an error. Perhaps this could be relaxed in some circumstances (like an `av`).
+- DBus does not support nil values. If we encounter one in a keyed container (probably an `a{sv}`) we will simply ignore it. If we encounter it in any other context we throw an error.
 - DBus does not support Floats, but it does support Doubles. Floats will automatically be converted to Doubles when encoding.
+- All nested types in variants will be encoded as variants, because the alternative is untenable.
+- DBus does not support Signed 8 bit integers, so they are encoded as unsigned integers in the event that they appear in a variant.
 
 ## TODO:
-- Complete Encodable support.
+- Better documentation
 - Decodable support.
 - Server side support.
 - Better test harness.
 
 ## Licenses
-Portions of this code (`AnyCodingKey.wift`, `Encoder.swift`, and `SingleValueEncodingContainer.wift`) are based off of [MessagePack](https://github.com/Flight-School/MessagePack) by Flight-School/Read Evaluate Press:
+Portions of this code (`AnyCodingKey.wift`, `Encoder.swift`, `SingleValueEncodingContainer.wift`, `UnkeyedEncodingContainer.swift`, and `KeyedEncodingContainer.swift`) are based off of [MessagePack](https://github.com/Flight-School/MessagePack) by Flight-School/Read Evaluate Press:
 ```
 Copyright 2018 Read Evaluate Press, LLC
 

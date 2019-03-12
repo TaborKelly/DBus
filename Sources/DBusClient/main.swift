@@ -4,11 +4,7 @@ import AnyCodable
 import HeliumLogger
 import LoggerAPI
 
-HeliumLogger.use(.entry)
-/*
-let logger = HeliumLogger()
-Log.logger = logger
-*/
+HeliumLogger.use(.debug)
 
 func fooSignal(message: DBusMessage) {
     print("fooSignal")
@@ -49,11 +45,15 @@ func send<T: Encodable>(manager: DBusManager, method: String, _ toSend: T, signa
         exit(1)
     }
     print("\(String(describing: m))")
-    /* The iterator is broken for maps
+    if let error = m.errorName {
+        print("ERROR: \(error)")
+    }
+    // The iterator is broken for maps
+    /*
     for mPrime in m {
         print(mPrime)
     }
-     */
+ */
 }
 
 do {
@@ -76,6 +76,7 @@ do {
     for mPrime in pm {
         print(mPrime)
     }
+
     try send(manager: manager, method: "b", true, signature: "b")
     try send(manager: manager, method: "s", "Hello World!", signature: "s")
     try send(manager: manager, method: "y", 8, signature: "y")
@@ -91,7 +92,11 @@ do {
     try send(manager: manager, method: "asi", asi, signature: "a{si}")
     let ass: [String: String] = [ "Lorem": "ipsum", "dolor": "sit", "amet,": "consectetur", "adipiscing": "elit,"]
     try send(manager: manager, method: "ass", ass, signature: "a{ss}")
-    /*
+    try send(manager: manager, method: "v", 32, signature: "v")
+    try send(manager: manager, method: "v", [8, 6, 7, 5, 3, 0, 9], signature: "v")
+    let arrayOfArrays = AnyEncodable([[0, 1, 2], ["a", "b", "c"]])
+    try send(manager: manager, method: "v", arrayOfArrays, signature: "v")
+    try send(manager: manager, method: "av", arrayOfArrays, signature: "av")
     let dictionary: [String: AnyEncodable] = [
         "boolean": true,
         "integer": 1,
@@ -104,9 +109,11 @@ do {
             "c": "charlie"
         ]
     ]
- */
+    try send(manager: manager, method: "asv", dictionary, signature: "a{sv}")
 
-    RunLoop.main.run() //(until: Date(timeIntervalSinceNow: 0.1))
+    print("fin")
+
+    RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
 } catch {
     print("\(error)")
     exit(1)

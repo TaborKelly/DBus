@@ -1,14 +1,71 @@
 import Foundation
 import CDBus
-import AnyCodable
 import LoggerAPI
+
+//
+// Supporting types
+//
+
+enum DBusBasicType {
+    case byte(UInt8)
+    case boolean(Bool)
+    case int16(Int16)
+    case uint16(UInt16)
+    case int32(Int32)
+    case uint32(UInt32)
+    case int64(Int64)
+    case uint64(UInt64)
+    case double(Double)
+    case fileDescriptor(UInt32)
+    case string(String)
+    case objectPath(String)
+    case signature(String)
+}
+
+enum SingleValueContainerStorage {
+    case basicType(DBusBasicType)
+    case encoder(_DBusEncoder)
+}
+
+extension DBusBasicType {
+    func getVariantSignature() -> String {
+        switch self {
+        case .byte:
+            return "y"
+        case .boolean:
+            return "b"
+        case .int16:
+            return "n"
+        case .uint16:
+            return "q"
+        case .int32:
+            return "i"
+        case .uint32:
+            return "u"
+        case .int64:
+            return "x"
+        case .uint64:
+            return "t"
+        case .double:
+            return "d"
+        case .fileDescriptor:
+            return "h"
+        case .string:
+            return "s"
+        case .objectPath:
+            return "o"
+        case .signature:
+            return "g"
+        }
+    }
+}
 
 extension _DBusEncoder {
     //
     // The Apple Codeable framework calls this class. It is split into two extensions (see below).
     //
     final class SingleValueContainer {
-        private var storage: AnyCodable? = nil
+        private var storage: SingleValueContainerStorage? = nil
         fileprivate func checkCanEncode(value: Any?) throws {
             Log.entry("")
             if self.storage != nil {
@@ -20,6 +77,7 @@ extension _DBusEncoder {
 
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
+        var variantSignature: String? = nil // TODO: revisit. Can this be removed and we just query storage?
 
         init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any]) {
             Log.entry("")
@@ -47,11 +105,141 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         throw EncodingError.invalidValue(value as Any, context)
     }
 
-    func encode<T>(_ value: T) throws where T : Encodable {
+    func encode(_ value: Bool) throws {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.storage = AnyCodable(value)
+        self.variantSignature = "b"
+        self.storage = .basicType(.boolean(value))
+    }
+
+    func encode(_ value: String) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "s"
+        self.storage = .basicType(.string(value))
+    }
+
+    func encode(_ value: Double) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "d"
+        self.storage = .basicType(.double(value))
+    }
+
+    func encode(_ value: Float) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "d"
+        self.storage = .basicType(.double(Double(value)))
+    }
+
+    func encode(_ value: Int) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        switch Int.bitWidth {
+        case 32:
+            self.variantSignature = "i"
+            self.storage = .basicType(.int32(Int32(value)))
+        case 64:
+            self.variantSignature = "x"
+            self.storage = .basicType(.int64(Int64(value)))
+        default:
+            throw RuntimeError.generic("SingleValueContainer.encode(): unsupported Integer width!")
+        }
+    }
+
+    func encode(_ value: Int8) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "y" // TODO: REVISIT
+        self.storage = .basicType(.byte(UInt8(value)))
+    }
+
+    func encode(_ value: Int16) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "n"
+        self.storage = .basicType(.int16(value))
+    }
+
+    func encode(_ value: Int32) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "i"
+        self.storage = .basicType(.int32(value))
+    }
+
+    func encode(_ value: Int64) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "x"
+        self.storage = .basicType(.int64(value))
+    }
+
+    func encode(_ value: UInt) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        switch UInt.bitWidth {
+        case 32:
+            self.variantSignature = "u"
+            self.storage = .basicType(.uint32(UInt32(value)))
+        case 64:
+            self.variantSignature = "t"
+            self.storage = .basicType(.uint64(UInt64(value)))
+        default:
+            throw RuntimeError.generic("SingleValueContainer.encode(): unsupported Integer width!")
+        }
+    }
+
+    func encode(_ value: UInt8) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "y"
+        self.storage = .basicType(.byte(value))
+    }
+
+    func encode(_ value: UInt16) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "q"
+        self.storage = .basicType(.uint16(value))
+    }
+
+    func encode(_ value: UInt32) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "u"
+        self.storage = .basicType(.uint32(value))
+    }
+
+    func encode(_ value: UInt64) throws {
+        Log.entry("")
+        try checkCanEncode(value: value)
+
+        self.variantSignature = "t"
+        self.storage = .basicType(.uint64(value))
+    }
+
+    func encode<T>(_ value: T) throws where T : Encodable {
+        Log.entry("\(value)")
+        try checkCanEncode(value: value)
+
+        let encoder = _DBusEncoder()
+        try value.encode(to: encoder)
+        self.storage = .encoder(encoder)
     }
 }
 
@@ -185,59 +373,90 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         try msgIter.append(argument: .double(double))
     }
 
-    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter) throws {
-        guard let value = self.storage else {
-            throw RuntimeError.generic("SingleValueContainer.dbusEncode: storage is nil!")
+    func dbusEncode(msgIter msgIterIn: DBusMessageIter, sigIter: DBusSignatureIter, _ value: DBusBasicType) throws {
+        Log.entry("")
+
+        // This is a little tricky, but we synthesize a new type and msgIter if we are dealing with a variant
+        let msgIter: DBusMessageIter
+        var sigIter = sigIter
+        let t = try sigIter.getCurrentType()
+        var synthesizedType = false
+        if t == .variant {
+            sigIter = try DBusSignatureIter(value.getVariantSignature())
+            synthesizedType = true
         }
 
-        switch (value.value) {
-        case is (Void):
-            throw RuntimeError.generic("SingleValueContainer.dbusEncode: value.value is nil!")
-        case let (v as Bool):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as Int):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as Int8):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as Int16):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as Int32):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as Int64):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as UInt):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as UInt8):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as UInt16):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as UInt32):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as UInt64):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as Float):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as Double):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
-        case let (v as String):
-            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                                  codingPath: codingPath, v)
+        if synthesizedType {
+            msgIter = try msgIterIn.openContainer(containerType: .variant,
+                                                  containedSignature: sigIter.getSignature())
+        } else {
+            msgIter = msgIterIn
+        }
 
-        default:
-            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, value)
+        switch (value) {
+        case .byte(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .boolean(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .int16(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .uint16(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .int32(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .uint32(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .int64(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .uint64(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .double(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .fileDescriptor(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .string(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .objectPath(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        case .signature(let v):
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, v)
+        }
+
+        if synthesizedType {
+            // Close the variant
+            let b = Bool(dbus_message_iter_close_container(&msgIterIn.iter, &msgIter.iter))
+            if b == false {
+                throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.SingleValueContainer.dbusEncode()")
+            }
+        }
+
+    }
+
+    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter) throws {
+        Log.entry("")
+
+        guard let storage = self.storage else {
+            throw RuntimeError.generic("SingleValueContainer.dbusEncode: self.storage is nil!")
+        }
+
+        switch storage {
+        case .basicType(let basicType):
+            try self.dbusEncode(msgIter: msgIter, sigIter: sigIter, basicType)
+        case .encoder(let encoder):
+            try encoder.dbusEncode(msgIter: msgIter, sigIter: sigIter)
         }
     }
 

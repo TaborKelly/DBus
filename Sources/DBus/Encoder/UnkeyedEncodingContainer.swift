@@ -95,22 +95,35 @@ extension _DBusEncoder.UnkeyedContainer: UnkeyedEncodingContainer {
 // The actualy DBus encoding happens here
 //
 extension _DBusEncoder.UnkeyedContainer: _DBusEncodingContainer {
-    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter) throws {
+    func dbusEncode(msgIter msgIterIn: DBusMessageIter, sigIter: DBusSignatureIter) throws {
         Log.entry("")
 
-        // First do some house cleaning and type checking
-        let sigSubIter = try sigIter.recurse()
-        // if we have a sigSubIter, then we really can recurse into this type
+        // This is a little tricky, but it is here to deal with the variant case
+        let msgIter: DBusMessageIter
+        let sigSubIter: DBusSignatureIter
         let t = try sigIter.getCurrentType()
-        switch t {
-        case .array, .struct:
-            break
-        default:
-            throw RuntimeError.generic("_DBusEncoder.UnkeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)")
+        let unkeyedType: DBusType
+        if t == .variant {
+            msgIter = try msgIterIn.openContainer(containerType: .variant,
+                                                  containedSignature: "av")
+            sigSubIter = try DBusSignatureIter("v")
+            unkeyedType = .array
+        } else {
+            msgIter = msgIterIn
+            sigSubIter = try sigIter.recurse()
+            switch t {
+            case .array:
+                unkeyedType = .array
+            case .struct:
+                unkeyedType = .struct
+                break
+            default:
+                throw RuntimeError.generic("_DBusEncoder.UnkeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)")
+            }
         }
 
         // Then actually open the array (or DBus struct)
-        let msgSubIter = try msgIter.openContainer(containerType: t, containedSignature: sigSubIter.getSignature())
+        let msgSubIter = try msgIter.openContainer(containerType: unkeyedType, containedSignature: sigSubIter.getSignature())
 
         // Now append all the elements
         for c in storage {
@@ -121,6 +134,14 @@ extension _DBusEncoder.UnkeyedContainer: _DBusEncodingContainer {
         let b = Bool(dbus_message_iter_close_container(&msgIter.iter, &msgSubIter.iter))
         if b == false {
             throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.UnkeyedContainer.dbusEncode()")
+        }
+
+        if t == .variant {
+            // Close the variant
+            let b = Bool(dbus_message_iter_close_container(&msgIterIn.iter, &msgIter.iter))
+            if b == false {
+                throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.UnkeyedContainer.dbusEncode()")
+            }
         }
     }
 }

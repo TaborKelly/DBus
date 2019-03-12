@@ -75,29 +75,55 @@ extension _DBusEncoder.KeyedContainer: KeyedEncodingContainerProtocol {
 }
 
 extension _DBusEncoder.KeyedContainer: _DBusEncodingContainer {
-    func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter) throws {
+    func dbusEncode(msgIter msgIterIn: DBusMessageIter, sigIter: DBusSignatureIter) throws {
+        Log.entry("")
+
+        // This is a little tricky, but it is here to deal with the variant case
+        let msgIter: DBusMessageIter
+        let tempIter: DBusSignatureIter
+        var msgVariantIter: DBusMessageIter? = nil
+
         // First do some house cleaning and type checking
-        let sigArrayIter = try sigIter.recurse()
+        let sigArrayIter: DBusSignatureIter
         let t = try sigIter.getCurrentType()
         switch t {
-        case .array:
-            break
+        // The normal case, where the user tells us our signature
+        case .array: // a{si}, a{ss}, a{sv}, etc
+            msgIter = msgIterIn
+            sigArrayIter = try sigIter.recurse() // {si}, {ss}, {sv}, etc
+        // The hard/weird case, where we are encocding into a "v"
+        case .variant:
+            // synthesize our own type
+            // libdbus won't let us create an incomplete type (eg, {"sv}"), so we need the tempIter
+            tempIter = try DBusSignatureIter("a{sv}")
+            sigArrayIter = try tempIter.recurse()
+            msgVariantIter = try msgIterIn.openContainer(containerType: .variant, containedSignature: tempIter.getSignature())
+            msgIter = msgVariantIter!
+
         default:
             throw RuntimeError.generic("_DBusEncoder.KeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)")
         }
-        // subT needs to contain a dict
-        let subT = try sigArrayIter.getCurrentType()
-        switch subT {
+
+        // Just some signature checking
+        // subType needs to contain a dict
+        let subType = try sigArrayIter.getCurrentType()
+        switch subType {
         case .dictionaryEntry:
             break
         default:
             throw RuntimeError.generic("_DBusEncoder.KeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)")
         }
+
         let sigDictIter = try sigArrayIter.recurse()
         let sigValueIter = try sigArrayIter.recurse()
         if sigValueIter.next() == false {
             throw RuntimeError.generic("_DBusEncoder.KeyedContainer.dbusEncode() failed to deduce value type for path \(codingPath)")
         }
+
+        Log.debug("sigIter.getSignature() \(sigIter.getSignature())")
+        Log.debug("sigArrayIter.getSignature() \(sigArrayIter.getSignature())")
+        Log.debug("sigDictIter.getSignature() \(sigDictIter.getSignature())")
+        Log.debug("sigValueIter.getSignature() \(sigValueIter.getSignature())")
 
         // Then actually open the array
         let msgArrayIter = try msgIter.openContainer(containerType: .array, containedSignature: sigArrayIter.getSignature())
@@ -121,6 +147,14 @@ extension _DBusEncoder.KeyedContainer: _DBusEncodingContainer {
         let b = Bool(dbus_message_iter_close_container(&msgIter.iter, &msgArrayIter.iter))
         if b == false {
             throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.KeyedContainer.dbusEncode()")
+        }
+
+        // If necessary, close the variant
+        if msgVariantIter != nil {
+            let b = Bool(dbus_message_iter_close_container(&msgIterIn.iter, &msgIter.iter))
+            if b == false {
+                throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.KeyedContainer.dbusEncode()")
+            }
         }
     }
 

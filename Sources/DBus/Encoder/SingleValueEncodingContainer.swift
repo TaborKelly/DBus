@@ -77,7 +77,6 @@ extension _DBusEncoder {
 
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
-        var variantSignature: String? = nil // TODO: revisit. Can this be removed and we just query storage?
 
         init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any]) {
             Log.entry("")
@@ -109,7 +108,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "b"
         self.storage = .basicType(.boolean(value))
     }
 
@@ -117,7 +115,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "s"
         self.storage = .basicType(.string(value))
     }
 
@@ -125,7 +122,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "d"
         self.storage = .basicType(.double(value))
     }
 
@@ -133,7 +129,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "d"
         self.storage = .basicType(.double(Double(value)))
     }
 
@@ -143,10 +138,8 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
 
         switch Int.bitWidth {
         case 32:
-            self.variantSignature = "i"
             self.storage = .basicType(.int32(Int32(value)))
         case 64:
-            self.variantSignature = "x"
             self.storage = .basicType(.int64(Int64(value)))
         default:
             throw RuntimeError.generic("SingleValueContainer.encode(): unsupported Integer width!")
@@ -157,7 +150,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "y" // TODO: REVISIT
         self.storage = .basicType(.byte(UInt8(value)))
     }
 
@@ -165,7 +157,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "n"
         self.storage = .basicType(.int16(value))
     }
 
@@ -173,7 +164,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "i"
         self.storage = .basicType(.int32(value))
     }
 
@@ -181,7 +171,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "x"
         self.storage = .basicType(.int64(value))
     }
 
@@ -191,10 +180,8 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
 
         switch UInt.bitWidth {
         case 32:
-            self.variantSignature = "u"
             self.storage = .basicType(.uint32(UInt32(value)))
         case 64:
-            self.variantSignature = "t"
             self.storage = .basicType(.uint64(UInt64(value)))
         default:
             throw RuntimeError.generic("SingleValueContainer.encode(): unsupported Integer width!")
@@ -205,7 +192,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "y"
         self.storage = .basicType(.byte(value))
     }
 
@@ -213,7 +199,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "q"
         self.storage = .basicType(.uint16(value))
     }
 
@@ -221,7 +206,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "u"
         self.storage = .basicType(.uint32(value))
     }
 
@@ -229,7 +213,6 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         Log.entry("")
         try checkCanEncode(value: value)
 
-        self.variantSignature = "t"
         self.storage = .basicType(.uint64(value))
     }
 

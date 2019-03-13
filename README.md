@@ -21,6 +21,7 @@ HeliumLogger.use(.debug) // For even more debug replace .debug with .entry
 - Decodable support.
 - Server side support.
 - Better test harness.
+- Revisit file handles (`UNIX_FD h (104)`). The [DBus specification](https://dbus.freedesktop.org/doc/dbus-specification.html) says that they are unsigned 32 bit integers, but libdbus treats them as signed 32 bit integers, which would seem to make more sense.
 
 ## Licenses
 Portions of this code (`AnyCodingKey.wift`, `Encoder.swift`, `SingleValueEncodingContainer.wift`, `UnkeyedEncodingContainer.swift`, and `KeyedEncodingContainer.swift`) are based off of [MessagePack](https://github.com/Flight-School/MessagePack) by Flight-School/Read Evaluate Press:

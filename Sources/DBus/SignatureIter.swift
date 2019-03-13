@@ -86,6 +86,7 @@ class DBusSignatureIter {
         var subiter = CDBus.DBusSignatureIter()
         dbus_signature_iter_recurse(&iter, &subiter)
 
+        // TODO: pass reference to self so that parent isn't deallocated before child by the ARC
         return DBusSignatureIter(subiter)
     }
 

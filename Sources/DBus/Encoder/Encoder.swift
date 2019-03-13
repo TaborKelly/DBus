@@ -33,7 +33,9 @@ final public class DBusEncoder {
      - Throws: `EncodingError.invalidValue(_:_:)`
                 if the value can't be encoded as a DBus object.
      */
-    public func encode(_ value: Encodable, to: DBusMessage, signature: String) throws {
+    public func encode(_ value: Encodable,
+                       to: DBusMessage, // TODO: revisit, nameing
+                       signature: String) throws {
         Log.entry("")
 
         let encoder = _DBusEncoder()

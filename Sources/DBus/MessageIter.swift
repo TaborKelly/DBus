@@ -9,7 +9,9 @@ import CDBus
 
 // MARK: - Iterating
 
-class DBusMessageIter {
+// A thin wrapper for the libdbus DBusMessageIter
+// NOT a Swift iterator
+public class DBusMessageIter {
     var iter: CDBus.DBusMessageIter
 
     init() {
@@ -18,7 +20,7 @@ class DBusMessageIter {
 }
 
 extension DBusMessageIter {
-    convenience init(iterating message: DBusMessage) {
+    public convenience init(iterating message: DBusMessage) {
         self.init()
         dbus_message_iter_init(message.internalPointer, &iter)
     }
@@ -53,98 +55,16 @@ extension DBusMessageIter {
 
         return sub
     }
-    
-    func next() -> DBusMessageArgument? {
 
-        // make sure there is a valid element
-        guard let argumentType = DBusType(Int(dbus_message_iter_get_arg_type(&iter)))
-            else { return nil }
-
-        let value: DBusMessageArgument
-
-        switch argumentType {
-
-        case .byte:
-            value = .byte(readBasic().byt)
-        case .boolean:
-            value = .boolean(Bool(readBasic().bool_val))
-        case .int16:
-            value = .int16(readBasic().i16)
-        case .int32:
-            value = .int32(readBasic().i32)
-        case .int64:
-            value = .int64(Int64(readBasic().i64))
-        case .uint16:
-            value = .uint16(readBasic().u16)
-        case .uint32:
-            value = .uint32(readBasic().u32)
-        case .uint64:
-            value = .uint64(UInt64(readBasic().u64))
-        case .double:
-            value = .double(readBasic().dbl)
-        case .fileDescriptor:
-            let fileDescriptor = DBusMessageArgument.FileDescriptor(rawValue: readBasic().fd)
-            value = .fileDescriptor(fileDescriptor)
-
-        case .string:
-            value = .string(readString())
-        case .objectPath:
-            value = .objectPath(DBusObjectPath(readString()))
-        case .signature:
-            value = .signature(DBusSignature(readString()))
-
-        case .array:
-
-            guard let signature = try? self.signature(),
-                let arrayType = signature.first,
-                case let .array(valueType) = arrayType
-                else { fatalError("Invalid array signature \((try? self.signature())?.description ?? "")") }
-
-            var elements = [DBusMessageArgument]()
-            recursiveIterate { elements.append($0) }
-
-            guard let array = DBusMessageArgument.Array(type: valueType, elements)
-                else { fatalError("Invalid elements") }
-
-            value = .array(array)
-
-        case .struct:
-
-            var elements = [DBusMessageArgument]()
-            recursiveIterate { elements.append($0) }
-
-            guard let structure = DBusMessageArgument.Structure(elements)
-                else { fatalError("Invalid elements") }
-
-            value = .struct(structure)
-
-        case .variant:
-            var elements = [DBusMessageArgument]()
-            recursiveIterate { elements.append($0) }
-
-            // Every variant should contain exacty one element, so this should always work.
-            guard let inner = elements.first else {
-                fatalError()
-            }
-
-            value = .variant(inner)
-
-        default:
-            fatalError()
-        }
-
-        // move iterator to next element in the sequence
-        dbus_message_iter_next(&iter)
-
-        // return value
-        return value
+    func next() -> Bool {
+        return Bool(dbus_message_iter_next(&iter))
     }
 
     /// Read a basic value into the provided pointer.
     @inline(__always)
-    private func readBasic() -> DBusBasicValue {
+    private func readBasic() -> CDBus.DBusBasicValue {
 
-        var basicValue = DBusBasicValue()
+        var basicValue = CDBus.DBusBasicValue()
         withUnsafeMutablePointer(to: &basicValue) {
             dbus_message_iter_get_basic(&iter, UnsafeMutableRawPointer($0))
         }
@@ -159,23 +79,7 @@ extension DBusMessageIter {
         return String(cString: cString)
     }
 
-    /// Recurses into a container value when reading values from a message.
-    private func recursiveIterate(_ iterate: (DBusMessageArgument) throws -> ()) rethrows {
-
-        /**
-         Recurses into a container value when reading values from a message, initializing a sub-iterator to use for traversing the child values of the container.
-
-         Note that this recurses into a value, not a type, so you can only recurse if the value exists. The main implication of this is that if you have for example an empty array of array of int32, you can recurse into the outermost array, but it will have no values, so you won't be able to recurse further. There's no array of int32 to recurse into.
-         */
-
-        let subiterator = DBusMessageIter()
-        dbus_message_iter_recurse(&iter, &subiterator.iter)
-
-        while let element = subiterator.next() {
-            try iterate(element)
-        }
-    }
-
+    // TODO: can we remove this?
     private func signature() throws -> DBusSignature {
 
         guard let cString = dbus_message_iter_get_signature(&iter)
@@ -187,37 +91,40 @@ extension DBusMessageIter {
 
         return DBusSignature(string)
     }
+
+    public func getBasic() throws -> DBusBasicValue {
+        let t = try getType()
+        if t.isBasic == false {
+            throw RuntimeError.generic("DBusMessageIter.getBasic(): \(t) is not a basic type.")
+        }
+
+        switch t {
+        case .byte, .boolean, .int16, .uint16, .int32, .uint32, .int64, .uint64, .double, .fileDescriptor:
+            let cBasic = readBasic()
+            return try DBusBasicValue(cBasic, t)
+        case .string, .objectPath, .signature:
+            let s = readString()
+            return try DBusBasicValue(s, t)
+        default:
+            throw RuntimeError.generic("DBusMessageIter.getBasic(): \(t) is not a basic type.")
+        }
+    }
+
+    public func getSignature() -> String {
+        return String(cString: dbus_message_iter_get_signature(&iter))
+    }
+
+    public func getType() throws -> DBusType {
+        let i = dbus_message_iter_get_arg_type(&iter)
+        guard let t = DBusType(i) else {
+            throw RuntimeError.generic("DBusMessageIter.getType(): DBusType() initializer failed")
+        }
+
+        return t
+    }
 }
 
 // MARK: - Appending
-
-/*
-
-internal extension DBusMessageIter {
-
-    /// A message iterator for which `dbus_message_iter_abandon_container_if_open()` is the only valid operation.
-    static var closed: DBusMessageIter {
-
-        var iter = DBusMessageIter()
-        dbus_message_iter_init_closed(&iter)
-        return iter
-    }
-
-    /**
-     Abandons creation of a contained-typed value and frees resources created by dbus_message_iter_open_container().
-
-     Once this returns, the message is hosed and you have to start over building the whole message.
-
-     Unlike dbus_message_iter_abandon_container(), it is valid to call this function on an iterator that was initialized with DBUS_MESSAGE_ITER_INIT_CLOSED, or an iterator that was already closed or abandoned. However, it is not valid to call this function on uninitialized memory. This is intended to be used in error cleanup code paths, similar to this pattern:
-     */
-    @inline(__always)
-    mutating func abandonContainerIfOpen(_ subcontainer: inout DBusMessageIter) {
-
-        dbus_message_iter_abandon_container_if_open(&self, &subcontainer)
-    }
-}
-
-*/
 
 internal extension DBusMessageIter {
 
@@ -227,39 +134,46 @@ internal extension DBusMessageIter {
         dbus_message_iter_init_append(message.internalPointer, &iter)
     }
 
+    func append(_ value: DBusBasicValue) throws {
+        let type = value.getType()
+        var cBasicValue = try value.getC()
+        try self.append(&cBasicValue, type)
+    }
+
+    // TODO: REVISIT. Can we get rid of this? It would let us remove a lot of code.
     func append(argument: DBusMessageArgument) throws {
 
         switch argument {
 
         case let .byte(value):
-            var basicValue = DBusBasicValue(byt: value)
+            var basicValue = CDBus.DBusBasicValue(byt: value)
             try append(&basicValue, .byte)
         case let .boolean(value):
-            var basicValue = DBusBasicValue(bool_val: dbus_bool_t(value))
+            var basicValue = CDBus.DBusBasicValue(bool_val: dbus_bool_t(value))
             try append(&basicValue, .boolean)
         case let .int16(value):
-            var basicValue = DBusBasicValue(i16: value)
+            var basicValue = CDBus.DBusBasicValue(i16: value)
             try append(&basicValue, .int16)
         case let .uint16(value):
-            var basicValue = DBusBasicValue(u16: value)
+            var basicValue = CDBus.DBusBasicValue(u16: value)
             try append(&basicValue, .uint16)
         case let .int32(value):
-            var basicValue = DBusBasicValue(i32: value)
+            var basicValue = CDBus.DBusBasicValue(i32: value)
             try append(&basicValue, .int32)
         case let .uint32(value):
-            var basicValue = DBusBasicValue(u32: value)
+            var basicValue = CDBus.DBusBasicValue(u32: value)
             try append(&basicValue, .uint32)
         case let .int64(value):
-            var basicValue = DBusBasicValue(i64: dbus_int64_t(value))
+            var basicValue = CDBus.DBusBasicValue(i64: dbus_int64_t(value))
             try append(&basicValue, .int64)
         case let .uint64(value):
-            var basicValue = DBusBasicValue(u64: dbus_uint64_t(value))
+            var basicValue = CDBus.DBusBasicValue(u64: dbus_uint64_t(value))
             try append(&basicValue, .uint64)
         case let .double(value):
-            var basicValue = DBusBasicValue(dbl: value)
+            var basicValue = CDBus.DBusBasicValue(dbl: value)
             try append(&basicValue, .double)
         case let .fileDescriptor(value):
-            var basicValue = DBusBasicValue(fd: value.rawValue)
+            var basicValue = CDBus.DBusBasicValue(fd: value.rawValue)
             try append(&basicValue, .fileDescriptor)
 
         case let .string(value):
@@ -290,7 +204,7 @@ internal extension DBusMessageIter {
         }
     }
 
-    private func append(_ basicValue: inout DBusBasicValue, _ type: DBusType) throws {
+    private func append(_ basicValue: inout CDBus.DBusBasicValue, _ type: DBusType) throws {
 
         guard withUnsafePointer(to: &basicValue, {
             Bool(dbus_message_iter_append_basic(&iter, Int32(type.integerValue), UnsafeRawPointer($0)))
@@ -301,7 +215,7 @@ internal extension DBusMessageIter {
 
         try string.withCString {
             let cString = UnsafeMutablePointer<Int8>(mutating: $0)
-            var basicValue = DBusBasicValue(str: cString)
+            var basicValue = CDBus.DBusBasicValue(str: cString)
             try append(&basicValue, type)
         }
     }

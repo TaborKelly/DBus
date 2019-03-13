@@ -381,6 +381,7 @@ public extension DBusMessage {
 
 // MARK: - Sequence
 
+/*
 extension DBusMessage: Sequence {
 
     public typealias Element = DBusMessageArgument
@@ -390,7 +391,8 @@ extension DBusMessage: Sequence {
         return Iterator(self)
     }
 }
-
+ */
+/*
 public extension DBusMessage {
 
     /// DBus Message Iterator
@@ -414,6 +416,7 @@ public extension DBusMessage {
         }
     }
 }
+*/
 
 // MARK: - Supporting Types
 

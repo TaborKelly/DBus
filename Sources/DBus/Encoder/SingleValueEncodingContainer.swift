@@ -6,58 +6,9 @@ import LoggerAPI
 // Supporting types
 //
 
-enum DBusBasicType {
-    case byte(UInt8)
-    case boolean(Bool)
-    case int16(Int16)
-    case uint16(UInt16)
-    case int32(Int32)
-    case uint32(UInt32)
-    case int64(Int64)
-    case uint64(UInt64)
-    case double(Double)
-    case fileDescriptor(UInt32)
-    case string(String)
-    case objectPath(String)
-    case signature(String)
-}
-
 enum SingleValueContainerStorage {
-    case basicType(DBusBasicType)
+    case basicType(DBusBasicValue)
     case encoder(_DBusEncoder)
-}
-
-extension DBusBasicType {
-    func getVariantSignature() -> String {
-        switch self {
-        case .byte:
-            return "y"
-        case .boolean:
-            return "b"
-        case .int16:
-            return "n"
-        case .uint16:
-            return "q"
-        case .int32:
-            return "i"
-        case .uint32:
-            return "u"
-        case .int64:
-            return "x"
-        case .uint64:
-            return "t"
-        case .double:
-            return "d"
-        case .fileDescriptor:
-            return "h"
-        case .string:
-            return "s"
-        case .objectPath:
-            return "o"
-        case .signature:
-            return "g"
-        }
-    }
 }
 
 extension _DBusEncoder {
@@ -237,7 +188,15 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         Log.entry("")
 
         let t = try sigIter.getCurrentType()
-        if t != .string {
+        switch t {
+        case .string:
+            try msgIter.append(.string(value))
+        case .objectPath:
+            try msgIter.append(.objectPath(value))
+        case .signature:
+            try msgIter.append(.signature(value))
+
+        default:
             throw RuntimeError.generic("Can't encode type String because DBus signature says \(t) for path \(codingPath)")
         }
 
@@ -356,7 +315,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         try msgIter.append(argument: .double(double))
     }
 
-    func dbusEncode(msgIter msgIterIn: DBusMessageIter, sigIter: DBusSignatureIter, _ value: DBusBasicType) throws {
+    func dbusEncode(msgIter msgIterIn: DBusMessageIter, sigIter: DBusSignatureIter, _ value: DBusBasicValue) throws {
         Log.entry("")
 
         // This is a little tricky, but we synthesize a new type and msgIter if we are dealing with a variant

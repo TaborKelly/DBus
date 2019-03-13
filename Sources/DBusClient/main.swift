@@ -9,9 +9,10 @@ HeliumLogger.use(.debug)
 func fooSignal(message: DBusMessage) {
     print("fooSignal")
 
+    /*
     for m in message {
         print(m)
-    }
+    }*/
 }
 
 // swapTwoValues<T>(_ a: inout T, _ b: inout T)
@@ -73,9 +74,10 @@ do {
         exit(1)
     }
     print(pm)
+    /*
     for mPrime in pm {
         print(mPrime)
-    }
+    }*/
 
     try send(manager: manager, method: "b", true, signature: "b")
     try send(manager: manager, method: "s", "Hello World!", signature: "s")

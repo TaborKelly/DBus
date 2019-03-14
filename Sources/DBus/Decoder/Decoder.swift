@@ -47,6 +47,15 @@ final public class DBusDecoder {
 
         return try T(from: decoder)
     }
+
+    // For iternal use
+    func decode<T>(_ type: T.Type, decodingContainer: DBusDecodingContainer) throws -> T where T : Decodable {
+        Log.entry("")
+
+        let decoder = try _DBusDecoder(userInfo: self.userInfo, decodingContainer: decodingContainer)
+
+        return try T(from: decoder)
+    }
 }
 
 final class _DBusDecoder {
@@ -64,26 +73,36 @@ final class _DBusDecoder {
         self.sigIter = try DBusSignatureIter(msgIter.getSignature())
     }
 
+    init(userInfo: [CodingUserInfoKey : Any], decodingContainer: DBusDecodingContainer) throws {
+        Log.entry("")
+
+        self.userInfo = userInfo
+        self.container = decodingContainer
+
+        // dummy values, we won't need them
+        self.msgIter = DBusMessageIter()
+        self.sigIter = try DBusSignatureIter("")
+    }
+
+    // TODO: variant case
     func dbusDecode() throws {
         let t = try self.sigIter.getCurrentType()
         switch t {
         case .byte, .boolean, .int16, .uint16, .int32, .uint32, .int64, .uint64, .double, .fileDescriptor, .string,
              .objectPath, .signature:
             container = try _DBusDecoder.SingleValueContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
-        default:
-            throw RuntimeError.generic("Unhandeled case in _DBusDecoder.dbusDecode()")
-            /*
         case .array:
-            <#code#>
-        case .variant:
-            <#code#>
+            container = try _DBusDecoder.UnkeyedContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
         case .struct:
-            <#code#>
-*/
-        /* This should never happen
+            container = try _DBusDecoder.UnkeyedContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
         case .dictionaryEntry:
-             */
+            let debugDescription = "_DBusDecoder.dbusDecode(): encountered a naked dictionary."
+            let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+            throw DecodingError.dataCorrupted(context)
+        default:
+            throw RuntimeError.generic("Unhandeled case in _DBusDecoder.dbusDecode() for t: \(t)")
         }
+
         guard let c = container else {
             throw RuntimeError.generic("Logic error in _DBusDecoder.dbusDecode()")
         }
@@ -114,16 +133,20 @@ extension _DBusDecoder: Decoder {
 
     func unkeyedContainer() -> UnkeyedDecodingContainer {
         Log.entry("")
-        /*
-        assertCanCreateContainer()
 
-        let container = UnkeyedContainer(dbusMessage: self.dbusMessage, codingPath: self.codingPath, userInfo: self.userInfo)
-        self.container = container
+        // we never expect this to fail
+        guard let c = container else {
+            let signature = "_DBusDecoder.unkeyedContainer(): container is nil, DBus decoding failed?"
+            return DummyUnkeyedDecodingContainer(codingPath: self.codingPath, userInfo: self.userInfo,
+                                                 signature: signature)
+        }
 
-        return container*/
-
-        return DummyUnkeyedDecodingContainer(codingPath: self.codingPath, userInfo: self.userInfo,
-                                             signature: msgIter.getSignature())
+        if c is UnkeyedDecodingContainer {
+            return c as! UnkeyedDecodingContainer
+        } else {
+            return DummyUnkeyedDecodingContainer(codingPath: self.codingPath, userInfo: self.userInfo,
+                                                 signature: msgIter.getSignature())
+        }
     }
 
     func singleValueContainer() -> SingleValueDecodingContainer {
@@ -146,9 +169,10 @@ extension _DBusDecoder: Decoder {
 }
 
 protocol DBusDecodingContainer: class {
-    var codingPath: [CodingKey] { get set }
+    var codingPath: [CodingKey] { get /*set*/ }
     var userInfo: [CodingUserInfoKey : Any] { get }
-    var msgIter: DBusMessageIter { get /*set*/ } // TODO: REVISIT. Is this necessary?
+    var msgIter: DBusMessageIter { get /*set*/ } // TODO: remove.
 
+    // Decode the DBus values, but DO NOT ADVANCE THE (outermost) ITERATOR
     func dbusDecode() throws
 }

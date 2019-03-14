@@ -79,6 +79,7 @@ do {
         print(mPrime)
     }*/
 
+    // Simple types
     try send(manager: manager, method: "b", true, signature: "b")
     try send(manager: manager, method: "s", "Hello World!", signature: "s")
     try send(manager: manager, method: "y", 8, signature: "y")
@@ -88,16 +89,22 @@ do {
     try send(manager: manager, method: "x", -64, signature: "x")
     try send(manager: manager, method: "t", 64, signature: "t")
     try send(manager: manager, method: "d", Double(6.0221409e+23), signature: "d")
+
+    // Simple variant case
+    try send(manager: manager, method: "v", 32, signature: "v")
+
+    // Arrays
     try send(manager: manager, method: "ay", [8, 6, 7, 5, 3, 0, 9], signature: "ay")
     try send(manager: manager, method: "array_s", ["Foo", "Bar", "Baz"], signature: "as")
+    try send(manager: manager, method: "v", [8, 6, 7, 5, 3, 0, 9], signature: "v")
+    let arrayOfArrays = AnyEncodable([[0, 1, 2], ["a", "b", "c"]])
+    try send(manager: manager, method: "v", arrayOfArrays, signature: "v")
+
+    // Dictionaries
     let asi: [String: Int] = [ "zero": 0, "one": 1, "two": 2, "three": 3 ]
     try send(manager: manager, method: "asi", asi, signature: "a{si}")
     let ass: [String: String] = [ "Lorem": "ipsum", "dolor": "sit", "amet,": "consectetur", "adipiscing": "elit,"]
     try send(manager: manager, method: "ass", ass, signature: "a{ss}")
-    try send(manager: manager, method: "v", 32, signature: "v")
-    try send(manager: manager, method: "v", [8, 6, 7, 5, 3, 0, 9], signature: "v")
-    let arrayOfArrays = AnyEncodable([[0, 1, 2], ["a", "b", "c"]])
-    try send(manager: manager, method: "v", arrayOfArrays, signature: "v")
     try send(manager: manager, method: "av", arrayOfArrays, signature: "av")
     let dictionary: [String: AnyEncodable] = [
         "boolean": true,

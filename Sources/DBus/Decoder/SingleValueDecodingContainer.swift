@@ -1,10 +1,6 @@
 import Foundation
 import LoggerAPI
 
-#if os(Linux)
-let NSEC_PER_SEC: UInt64 = 1000000000
-#endif
-
 extension _DBusDecoder {
     final class SingleValueContainer {
         var codingPath: [CodingKey]
@@ -25,13 +21,13 @@ extension _DBusDecoder {
 }
 
 extension _DBusDecoder.SingleValueContainer: DBusDecodingContainer {
+    // DOES NOT ADVANCE THE ITERATOR
     func dbusDecode() throws {
         let t = try self.sigIter.getCurrentType()
         switch t {
         case .byte, .boolean, .int16, .uint16, .int32, .uint32, .int64, .uint64, .double, .fileDescriptor,
              .string, .objectPath, .signature:
             storage = try msgIter.getBasic()
-            let _ = msgIter.next()
         default:
             throw RuntimeError.generic("Unhandeled case in _DBusDecoder.SingleValueContainer.dbusDecode()")
         }

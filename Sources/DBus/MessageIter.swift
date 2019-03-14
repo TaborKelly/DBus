@@ -122,6 +122,10 @@ extension DBusMessageIter {
 
         return t
     }
+
+    public func hasNext() -> Bool {
+        return Bool(dbus_message_iter_has_next(&iter))
+    }
 }
 
 // MARK: - Appending

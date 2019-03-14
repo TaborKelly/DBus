@@ -46,9 +46,9 @@ public enum RuntimeError: Error {
     case generic(String)
 }
 
-// Given a swift string, make a copy of the C string (const char *) and return a pointer to it
-func swiftStringToConstCharStar(_ s: String) throws -> UnsafePointer<Int8> {
-    return try s.withCString { (unsafePointer: UnsafePointer<Int8>) -> UnsafePointer<Int8> in
+// Given a swift string, make a copy of the C string (char *) and return a pointer to it
+func swiftStringToCharStar(_ s: String) throws -> UnsafeMutablePointer<Int8> {
+    return try s.withCString { (unsafePointer: UnsafePointer<Int8>) -> UnsafeMutablePointer<Int8> in
         // We need to copy the string to save a copy. unsafePointer is only valid in this closure
         // UnsafeMutableRawPointer
         let bufferLen = strlen(unsafePointer) + 1
@@ -58,9 +58,17 @@ func swiftStringToConstCharStar(_ s: String) throws -> UnsafePointer<Int8> {
         memcpy(unsafeMutableRawPointer, unsafePointer, bufferLen)
         // UnsafeMutablePointer<Int8>
         let unsafeMutablePointer = unsafeMutableRawPointer.assumingMemoryBound(to: Int8.self)
+        return unsafeMutablePointer
         // UnsafePointer<Int8>
-        return UnsafePointer(unsafeMutablePointer)
+        // return UnsafePointer(unsafeMutablePointer)
     }
+}
+
+// Given a swift string, make a copy of the C string (const char *) and return a pointer to it
+func swiftStringToConstCharStar(_ s: String) throws -> UnsafePointer<Int8> {
+    let unsafeMutablePointer = try swiftStringToCharStar(s)
+    // UnsafePointer<Int8>
+    return UnsafePointer(unsafeMutablePointer)
 }
 
 public class DBusError: Error, Equatable, CustomStringConvertible /*, Hashable*/ {

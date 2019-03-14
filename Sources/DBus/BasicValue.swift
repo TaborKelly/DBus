@@ -107,38 +107,33 @@ extension DBusBasicValue {
     }
 
     func getC() throws -> CDBus.DBusBasicValue {
-        var c = CDBus.DBusBasicValue()
-
         switch self {
         case .byte(let v):
-            c.byt = v
+            return CDBus.DBusBasicValue(byt: v)
         case .boolean(let v):
             if v {
-                c.bool_val = 1
+                return CDBus.DBusBasicValue(bool_val: 1)
             } else {
-                c.bool_val = 0
+                return CDBus.DBusBasicValue(bool_val: 0)
             }
         case .int16(let v):
-            c.i16 = v
+            return CDBus.DBusBasicValue(i16: v)
         case .uint16(let v):
-            c.u16 = v
+            return CDBus.DBusBasicValue(u16: v)
         case .int32(let v):
-            c.i32 = v
+            return CDBus.DBusBasicValue(i32: v)
         case .uint32(let v):
-            c.u32 = v
+            return CDBus.DBusBasicValue(u32: v)
         case .int64(let v):
-            c.i64 = Int(v)
+            return CDBus.DBusBasicValue(i64: Int(v))
         case .uint64(let v):
-            c.u64 = UInt(v)
+            return CDBus.DBusBasicValue(u64: UInt(v))
         case .double(let v):
-            c.dbl = v
+            return CDBus.DBusBasicValue(dbl: v)
         case .fileDescriptor(let v):
-            c.fd = Int32(v)
+            return CDBus.DBusBasicValue(fd: Int32(v))
         case .string(let v), .objectPath(let v), .signature(let v):
-            let p = try swiftStringToConstCharStar(v)
-            c.str = UnsafeMutablePointer(mutating: p)
+            return CDBus.DBusBasicValue(str: try swiftStringToCharStar(v))
         }
-
-        return c
     }
 }

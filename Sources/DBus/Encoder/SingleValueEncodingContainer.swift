@@ -199,8 +199,6 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         default:
             throw RuntimeError.generic("Can't encode type String because DBus signature says \(t) for path \(codingPath)")
         }
-
-        try msgIter.append(argument: .string(value))
     }
 
     // This is exposed so that KeyedEncodingContainer can use it

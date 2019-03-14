@@ -36,6 +36,7 @@ final class CodableTests: XCTestCase {
         ("testS", testS),
         ("testO", testO),
         ("testG", testG),
+        ("testArray", testArray),
     ]
 
     // BYTE y (121)
@@ -238,5 +239,20 @@ final class CodableTests: XCTestCase {
         } catch {
             XCTFail("\(error)")
         }
+    }
+
+    func testArray() {
+        do {
+            let input = [1, 2, 3, 4]
+
+            let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
+            try encoder.encode(input, to: dbusMessage, signature: "ai")
+            let decoded = try! decoder.decode([Int].self, from: dbusMessage)
+
+            XCTAssertEqual(input, decoded)
+        } catch {
+            XCTFail("\(error)")
+        }
+
     }
 }

@@ -87,9 +87,9 @@ final class DummyUnkeyedDecodingContainer: UnkeyedDecodingContainer {
     var codingPath: [CodingKey]
     var userInfo: [CodingUserInfoKey: Any]
     let error: Error
-    var count: Int? = nil
+    var count: Int? = 1
     var currentIndex: Int = 0
-    var isAtEnd: Bool = true
+    var isAtEnd: Bool = false
 
     init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], signature: String) {
         Log.entry("")

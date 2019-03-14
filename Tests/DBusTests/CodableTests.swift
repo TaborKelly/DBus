@@ -245,14 +245,19 @@ final class CodableTests: XCTestCase {
         do {
             let input = [1, 2, 3, 4]
 
-            let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
+            // Test as a DBus Array
+            var dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(input, to: dbusMessage, signature: "ai")
-            let decoded = try! decoder.decode([Int].self, from: dbusMessage)
+            var decoded = try! decoder.decode([Int].self, from: dbusMessage)
+            XCTAssertEqual(input, decoded)
 
+            // While we are at it, try encoding as a DBus Struct
+            dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
+            try encoder.encode(input, to: dbusMessage, signature: "(iiii)")
+            decoded = try! decoder.decode([Int].self, from: dbusMessage)
             XCTAssertEqual(input, decoded)
         } catch {
             XCTFail("\(error)")
         }
-
     }
 }

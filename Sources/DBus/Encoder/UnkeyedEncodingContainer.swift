@@ -122,8 +122,13 @@ extension _DBusEncoder.UnkeyedContainer: _DBusEncodingContainer {
             }
         }
 
-        // Then actually open the array (or DBus struct)
-        let msgSubIter = try msgIter.openContainer(containerType: unkeyedType, containedSignature: sigSubIter.getSignature())
+        // Then actually open the array (or DBus struct). But we open it slightly different for the struct, so
+        // calculate the containedSignature.
+        var containedSignature: String? = nil
+        if unkeyedType == .array {
+            containedSignature = sigSubIter.getSignature()
+        }
+        let msgSubIter = try msgIter.openContainer(containerType: unkeyedType, containedSignature: containedSignature)
 
         // Now append all the elements
         for c in storage {

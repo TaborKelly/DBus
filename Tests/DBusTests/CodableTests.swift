@@ -1,14 +1,14 @@
 
 //
-//  SignatureTests.swift
+//  CodableTests.swift
 //  DBusTests
 //
-//  Created by Alsey Coleman Miller on 10/22/18.
+//  Created by Tabor Kelly on 3/13/18.
 //
 
 import Foundation
 import XCTest
-@testable import DBus
+import DBus
 import HeliumLogger
 import LoggerAPI
 
@@ -38,6 +38,8 @@ final class CodableTests: XCTestCase {
         ("testG", testG),
         ("testArray", testArray),
         ("testMap", testMap),
+        ("testV", testV),
+        ("testComplexMap", testComplexMap),
     ]
 
     // BYTE y (121)
@@ -277,6 +279,30 @@ final class CodableTests: XCTestCase {
             try encoder.encode(inputIS, to: dbusMessage, signature: "a{is}")
             let decodedIS = try decoder.decode([Int: String].self, from: dbusMessage)
             XCTAssertEqual(inputIS, decodedIS)
+        } catch {
+            XCTFail("\(error)")
+        }
+    }
+
+    func testV() {
+        do {
+            let inputI = [8, 6, 7, 5, 3, 0, 9]
+            // Test as a DBus Array
+            let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
+            try encoder.encode(inputI, to: dbusMessage, signature: "av")
+            let decodedSI = try decoder.decode([Int].self, from: dbusMessage)
+            XCTAssertEqual(inputI, decodedSI)
+        } catch {
+            XCTFail("\(error)")
+        }
+    }
+
+    func testComplexMap() {
+        do {
+            let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
+            try encoder.encode(Airport.example, to: dbusMessage, signature: "a{sv}")
+            let decoded = try decoder.decode(Airport.self, from: dbusMessage)
+            XCTAssert(Airport.example == decoded)
         } catch {
             XCTFail("\(error)")
         }

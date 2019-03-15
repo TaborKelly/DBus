@@ -11,7 +11,7 @@ let package = Package(
         .package(url: "https://github.com/taborkelly/CDBus.git", .branch("master")),
         .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.8.0"),
         .package(url: "https://github.com/IBM-Swift/LoggerAPI.git", from: "1.8.0"),
-        .package(url: "https://github.com/Flight-School/AnyCodable.git", from: "0.1.0"),
+        .package(url: "https://github.com/Flight-School/AnyCodable.git", from: "0.1.0")
     ],
     targets: [
         .target(

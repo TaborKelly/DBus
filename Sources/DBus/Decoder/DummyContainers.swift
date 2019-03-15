@@ -1,6 +1,7 @@
 import Foundation
 import LoggerAPI
 
+/*
 final class DummySingleValueDecodingContainer: SingleValueDecodingContainer {
     var codingPath: [CodingKey]
     var userInfo: [CodingUserInfoKey: Any]
@@ -82,7 +83,7 @@ final class DummySingleValueDecodingContainer: SingleValueDecodingContainer {
         throw self.error
     }
 }
-
+*/
 final class DummyUnkeyedDecodingContainer: UnkeyedDecodingContainer {
     var codingPath: [CodingKey]
     var userInfo: [CodingUserInfoKey: Any]

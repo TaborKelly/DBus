@@ -1,14 +1,16 @@
 import Foundation
 import LoggerAPI
 
+//
+// This is where the code lives to actually decode the DBus message.
+//
 extension _DBusDecoder {
-    final class UnkeyedContainer {
+    final class DBusUnkeyedContainer: DBusDecodingContainer {
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
         let msgIter: DBusMessageIter
         let sigIter: DBusSignatureIter // TODO: remove
         var storage: [DBusDecodingContainer] = []
-        var currentIndex: Int = 0
 
         init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], msgIter: DBusMessageIter) throws {
             Log.entry("")
@@ -19,117 +21,132 @@ extension _DBusDecoder {
             self.sigIter = try DBusSignatureIter(msgIter.getSignature())
         }
 
-        var count: Int? {
-            return storage.count
-        }
-
         var nestedCodingPath: [CodingKey] {
             Log.entry("")
 
-            return self.codingPath + [AnyCodingKey(intValue: self.count ?? 0)]
-        }
-    }
-}
-
-extension _DBusDecoder.UnkeyedContainer: DBusDecodingContainer {
-    // TODO: variant and dictionary cases
-    func dbusDecode() throws {
-        let msgSubIter: DBusMessageIter
-        var sigSubIter: DBusSignatureIter
-
-        let outerType = try self.sigIter.getCurrentType()
-        switch outerType {
-        case .array, .struct:
-            msgSubIter = try self.msgIter.recurse()
-            sigSubIter = try self.sigIter.recurse()
-            let _ = msgIter.next()
-        default:
-            throw RuntimeError.generic("Unhandeled case in _DBusDecoder.UnkeyedContainer.dbusDecode()")
+            return self.codingPath + [AnyCodingKey(intValue: storage.count)]
         }
 
-        let innerType = try sigSubIter.getCurrentType()
-        repeat {
-            switch innerType {
-            case .byte, .boolean, .int16, .uint16, .int32, .uint32, .int64, .uint64, .double, .fileDescriptor,
-                 .string, .objectPath, .signature:
-                    let container = try _DBusDecoder.SingleValueContainer(codingPath: nestedCodingPath, userInfo: userInfo,
-                                                                          msgIter: msgSubIter)
-                    try container.dbusDecode()
-                    storage.append(container)
+        func dbusDecode() throws {
+            let msgSubIter: DBusMessageIter
 
+            let outerType = try self.sigIter.getCurrentType()
+            switch outerType {
             case .array, .struct:
-                let container = try _DBusDecoder.UnkeyedContainer(codingPath: nestedCodingPath, userInfo: userInfo,
-                                                                  msgIter: msgSubIter)
-                try container.dbusDecode()
-                storage.append(container)
-
+                msgSubIter = try self.msgIter.recurse()
+                let _ = msgIter.next()
             default:
                 throw RuntimeError.generic("Unhandeled case in _DBusDecoder.UnkeyedContainer.dbusDecode()")
             }
-        } while msgSubIter.next()
+
+            repeat {
+                let container = try decodeValue(codingPath: nestedCodingPath, userInfo: userInfo, msgIter: msgSubIter)
+                        try container.dbusDecode()
+                storage.append(container)
+            } while msgSubIter.next()
+        }
     }
 }
 
-extension _DBusDecoder.UnkeyedContainer: UnkeyedDecodingContainer {
-    var isAtEnd: Bool {
-        guard let count = self.count else {
-            return true
+extension _DBusDecoder {
+    final class UnkeyedContainer: UnkeyedDecodingContainer {
+        var codingPath: [CodingKey]
+        var userInfo: [CodingUserInfoKey: Any]
+        let storage: [DBusDecodingContainer]?
+        var currentIndex: Int = 0
+
+        init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], storage: [DBusDecodingContainer]?) {
+            Log.entry("")
+
+            self.codingPath = codingPath
+            self.userInfo = userInfo
+            self.storage = storage
         }
 
-        return currentIndex >= count
-    }
-
-    func checkCanDecodeValue() throws {
-        guard !self.isAtEnd else {
-            throw DecodingError.dataCorruptedError(in: self, debugDescription: "Unexpected end of data")
+        var count: Int? {
+            guard let storage = self.storage else {
+                return nil
+            }
+            return storage.count
         }
-    }
 
-    func decodeNil() throws -> Bool {
-        Log.entry("")
+        var isAtEnd: Bool {
+            guard let count = self.count else {
+                return true
+            }
 
-        let debugDescription = "_DBusDecoder.UnkeyedContainer.decodeNil(): DBus does not support nil values."
-        let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
-        throw DecodingError.typeMismatch(Any.self, context)
-    }
+            return currentIndex >= count
+        }
 
-    func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
-        Log.entry("")
-        try checkCanDecodeValue()
-        defer { self.currentIndex += 1 }
+        func checkCanDecodeValue() throws {
+            guard !self.isAtEnd else {
+                throw DecodingError.dataCorruptedError(in: self, debugDescription: "Unexpected end of data")
+            }
+        }
 
-        let container = self.storage[self.currentIndex]
-        let decoder = DBusDecoder()
-        let value = try decoder.decode(T.self, decodingContainer: container)
+        func decodeNil() throws -> Bool {
+            Log.entry("")
 
-        return value
-    }
+            let debugDescription = "_DBusDecoder.UnkeyedContainer.decodeNil(): DBus does not support nil values."
+            let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+            throw DecodingError.typeMismatch(Any.self, context)
+        }
 
-    func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
-        Log.entry("")
-        try checkCanDecodeValue()
-        defer { self.currentIndex += 1 }
+        func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
+            Log.entry("")
 
-        let container = self.storage[self.currentIndex] as! _DBusDecoder.UnkeyedContainer
+            guard let storage = self.storage else {
+                let debugDescription = "_DBusDecoder.UnkeyedContainer.decode<T>(): wrong container type."
+                let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+                throw DecodingError.typeMismatch(Any.self, context)
+            }
 
-        return container
-    }
+            try checkCanDecodeValue()
+            defer { self.currentIndex += 1 }
 
-    func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
-        Log.entry("")
-        try checkCanDecodeValue()
-        defer { self.currentIndex += 1 }
+            let container = storage[self.currentIndex]
+            let decoder = DBusDecoder()
+            let value = try decoder.decode(T.self, decodingContainer: container)
 
-        let container = self.storage[self.currentIndex] as! _DBusDecoder.KeyedContainer<NestedKey>
+            return value
+        }
 
-        return KeyedDecodingContainer(container)
-    }
+        func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
+            Log.entry("")
+            try checkCanDecodeValue()
+            defer { self.currentIndex += 1 }
 
-    func superDecoder() throws -> Decoder {
-        Log.entry("")
-        fatalError("Unimplemented") // What does this even mean?
-        // return try _DBusDecoder(userInfo: self.userInfo, msgIter: self.msgIter)
+            guard let storage = self.storage else {
+                let debugDescription = "_DBusDecoder.UnkeyedContainer.nestedUnkeyedContainer(): wrong container type."
+                let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+                throw DecodingError.typeMismatch(Any.self, context)
+            }
+
+            let container = storage[self.currentIndex] as! _DBusDecoder.UnkeyedContainer
+
+            return container
+        }
+
+        func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
+            Log.entry("")
+            try checkCanDecodeValue()
+            defer { self.currentIndex += 1 }
+
+            guard let storage = self.storage else {
+                let debugDescription = "_DBusDecoder.UnkeyedContainer.nestedContainer<NestedKey>(): wrong container type."
+                let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+                throw DecodingError.typeMismatch(Any.self, context)
+            }
+
+            let container = storage[self.currentIndex] as! _DBusDecoder.KeyedContainer<NestedKey>
+
+            return KeyedDecodingContainer(container)
+        }
+
+        func superDecoder() throws -> Decoder {
+            Log.entry("")
+            fatalError("Unimplemented") // What does this even mean?
+            // return try _DBusDecoder(userInfo: self.userInfo, msgIter: self.msgIter)
+        }
     }
 }
-
-

@@ -87,25 +87,8 @@ extension _DBusDecoder {
                     throw DecodingError.dataCorrupted(context)
                 }
 
-                let valueType = try msgDictIter.getType()
-                switch valueType {
-                case .byte, .boolean, .int16, .uint16, .int32, .uint32, .int64, .uint64, .double, .fileDescriptor,
-                     .string, .objectPath, .signature:
-                    let container = try _DBusDecoder.SingleValueContainer(codingPath: nestedCodingPath(key),
-                                                                          userInfo: userInfo,
-                                                                          msgIter: msgDictIter)
-                    try container.dbusDecode()
-                    storage[key] = container
-
-                case .array, .struct:
-                    let container = try _DBusDecoder.UnkeyedContainer(codingPath: nestedCodingPath(key), userInfo: userInfo,
-                                                                      msgIter: msgDictIter)
-                    try container.dbusDecode()
-                    storage[key] = container
-
-                default:
-                    throw RuntimeError.generic("Unhandeled case in _DBusDecoder.KeyedContainer.dbusDecode()")
-                }
+                storage[key] = try decodeValue(codingPath: nestedCodingPath(key), userInfo: userInfo,
+                                               msgIter: msgDictIter)
             } while msgArrayIter.next()
         }
     }
@@ -118,10 +101,10 @@ extension _DBusDecoder {
     final class KeyedContainer<Key> where Key: CodingKey {
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
-        let storage: [String: DBusDecodingContainer]
+        let storage: [String: DBusDecodingContainer] // TODO: make this optional
 
         init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any],
-             storage: [String: DBusDecodingContainer] = [:]) {
+             storage: [String: DBusDecodingContainer]) {
             Log.entry("")
 
             self.codingPath = codingPath
@@ -155,9 +138,8 @@ extension _DBusDecoder.KeyedContainer: KeyedDecodingContainerProtocol {
     func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T : Decodable {
         Log.entry("")
 
-        let k = AnyCodingKey(key)
-        guard let container = self.storage[k.stringValue] else {
-            throw RuntimeError.generic("Could not find key \(k)")
+        guard let container = self.storage[key.stringValue] else {
+            throw RuntimeError.generic("Could not find key \(key)")
         }
         let decoder = DBusDecoder()
         let value = try decoder.decode(T.self, decodingContainer: container)

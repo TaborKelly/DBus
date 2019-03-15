@@ -25,6 +25,7 @@ HeliumLogger.use(.debug) // For even more debug replace .debug with .entry
 - Test on 32 bit platforms.
 - Remove remaining printfs().
 - Use Codable error types whenever possible.
+- Check for memory leaks
 
 ## Licenses
 This code is licensed under the MIT license.

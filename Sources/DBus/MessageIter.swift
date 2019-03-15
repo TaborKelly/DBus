@@ -123,6 +123,15 @@ extension DBusMessageIter {
         return t
     }
 
+    public func getElementType() throws -> DBusType {
+        let i = dbus_message_iter_get_element_type(&iter)
+        guard let t = DBusType(i) else {
+            throw RuntimeError.generic("DBusMessageIter.getElementType(): DBusType() initializer failed")
+        }
+
+        return t
+    }
+
     public func hasNext() -> Bool {
         return Bool(dbus_message_iter_has_next(&iter))
     }

@@ -6,7 +6,7 @@ import LoggerAPI
 // Supporting types
 //
 
-enum SingleValueContainerStorage {
+enum SingleEncoderValueStorage {
     case basicType(DBusBasicValue)
     case encoder(_DBusEncoder)
 }
@@ -16,7 +16,7 @@ extension _DBusEncoder {
     // The Apple Codeable framework calls this class. It is split into two extensions (see below).
     //
     final class SingleValueContainer {
-        private var storage: SingleValueContainerStorage? = nil
+        private var storage: SingleEncoderValueStorage? = nil
         fileprivate func checkCanEncode(value: Any?) throws {
             Log.entry("")
             if self.storage != nil {
@@ -42,7 +42,7 @@ extension _DBusEncoder {
 }
 
 //
-// This is the code that the Apple Codeable framework calls. We really just save the data that we ware about for later
+// This is the code that the Apple Codeable framework calls. We really just save the data that we care about for later
 // use (in storage).
 //
 extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {

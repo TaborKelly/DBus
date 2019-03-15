@@ -6,7 +6,7 @@ extension _DBusDecoder {
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
         let msgIter: DBusMessageIter
-        var sigIter: DBusSignatureIter
+        var sigIter: DBusSignatureIter // TODO: remove
         var storage: DBusBasicValue? = nil
 
         init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], msgIter: DBusMessageIter) throws {

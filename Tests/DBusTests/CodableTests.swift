@@ -37,6 +37,7 @@ final class CodableTests: XCTestCase {
         ("testO", testO),
         ("testG", testG),
         ("testArray", testArray),
+        ("testMap", testMap),
     ]
 
     // BYTE y (121)
@@ -46,7 +47,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(uint8, to: dbusMessage, signature: "y")
-            let decoded = try! decoder.decode(UInt8.self, from: dbusMessage)
+            let decoded = try decoder.decode(UInt8.self, from: dbusMessage)
 
             XCTAssertEqual(uint8, decoded)
         } catch {
@@ -61,7 +62,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(boolean, to: dbusMessage, signature: "b")
-            let decoded = try! decoder.decode(Bool.self, from: dbusMessage)
+            let decoded = try decoder.decode(Bool.self, from: dbusMessage)
 
             XCTAssertEqual(boolean, decoded)
         } catch {
@@ -76,7 +77,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(int16, to: dbusMessage, signature: "n")
-            let decoded = try! decoder.decode(Int16.self, from: dbusMessage)
+            let decoded = try decoder.decode(Int16.self, from: dbusMessage)
 
             XCTAssertEqual(int16, decoded)
         } catch {
@@ -91,7 +92,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(uint16, to: dbusMessage, signature: "q")
-            let decoded = try! decoder.decode(UInt16.self, from: dbusMessage)
+            let decoded = try decoder.decode(UInt16.self, from: dbusMessage)
 
             XCTAssertEqual(uint16, decoded)
         } catch {
@@ -106,7 +107,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(int32, to: dbusMessage, signature: "i")
-            let decoded = try! decoder.decode(Int32.self, from: dbusMessage)
+            let decoded = try decoder.decode(Int32.self, from: dbusMessage)
 
             XCTAssertEqual(int32, decoded)
         } catch {
@@ -121,7 +122,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(uint32, to: dbusMessage, signature: "u")
-            let decoded = try! decoder.decode(UInt32.self, from: dbusMessage)
+            let decoded = try decoder.decode(UInt32.self, from: dbusMessage)
 
             XCTAssertEqual(uint32, decoded)
         } catch {
@@ -136,7 +137,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(int64, to: dbusMessage, signature: "x")
-            let decoded = try! decoder.decode(Int64.self, from: dbusMessage)
+            let decoded = try decoder.decode(Int64.self, from: dbusMessage)
 
             XCTAssertEqual(int64, decoded)
         } catch {
@@ -151,7 +152,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(uint64, to: dbusMessage, signature: "t")
-            let decoded = try! decoder.decode(UInt64.self, from: dbusMessage)
+            let decoded = try decoder.decode(UInt64.self, from: dbusMessage)
 
             XCTAssertEqual(uint64, decoded)
         } catch {
@@ -168,13 +169,13 @@ final class CodableTests: XCTestCase {
             // Try as Double
             var dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(double, to: dbusMessage, signature: "d")
-            let decodedDouble = try! decoder.decode(Double.self, from: dbusMessage)
+            let decodedDouble = try decoder.decode(Double.self, from: dbusMessage)
             XCTAssertEqual(double, decodedDouble)
 
             // Try as Float
             dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(float, to: dbusMessage, signature: "d")
-            let decodedFloat = try! decoder.decode(Float.self, from: dbusMessage)
+            let decodedFloat = try decoder.decode(Float.self, from: dbusMessage)
             XCTAssertEqual(float, decodedFloat)
         } catch {
             XCTFail("\(error)")
@@ -188,7 +189,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(fd, to: dbusMessage, signature: "h")
-            let decoded = try! decoder.decode(UInt32.self, from: dbusMessage)
+            let decoded = try decoder.decode(UInt32.self, from: dbusMessage)
 
             XCTAssertEqual(fd, decoded)
         } catch {
@@ -203,7 +204,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(string, to: dbusMessage, signature: "s")
-            let decoded = try! decoder.decode(String.self, from: dbusMessage)
+            let decoded = try decoder.decode(String.self, from: dbusMessage)
 
             XCTAssertEqual(string, decoded)
         } catch {
@@ -218,7 +219,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(objectPath, to: dbusMessage, signature: "o")
-            let decoded = try! decoder.decode(String.self, from: dbusMessage)
+            let decoded = try decoder.decode(String.self, from: dbusMessage)
 
             XCTAssertEqual(objectPath, decoded)
         } catch {
@@ -233,7 +234,7 @@ final class CodableTests: XCTestCase {
 
             let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(signature, to: dbusMessage, signature: "g")
-            let decoded = try! decoder.decode(String.self, from: dbusMessage)
+            let decoded = try decoder.decode(String.self, from: dbusMessage)
 
             XCTAssertEqual(signature, decoded)
         } catch {
@@ -248,14 +249,34 @@ final class CodableTests: XCTestCase {
             // Test as a DBus Array
             var dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(input, to: dbusMessage, signature: "ai")
-            var decoded = try! decoder.decode([Int].self, from: dbusMessage)
+            var decoded = try decoder.decode([Int].self, from: dbusMessage)
             XCTAssertEqual(input, decoded)
 
             // While we are at it, try encoding as a DBus Struct
             dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
             try encoder.encode(input, to: dbusMessage, signature: "(iiii)")
-            decoded = try! decoder.decode([Int].self, from: dbusMessage)
+            decoded = try decoder.decode([Int].self, from: dbusMessage)
             XCTAssertEqual(input, decoded)
+        } catch {
+            XCTFail("\(error)")
+        }
+    }
+
+    func testMap() {
+        do {
+            let inputSI: [String: Int] = [ "zero": 0, "one": 1, "two": 2, "three": 3 ]
+            // Test as a DBus Array
+            var dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
+            try encoder.encode(inputSI, to: dbusMessage, signature: "a{si}")
+            let decodedSI = try decoder.decode([String: Int].self, from: dbusMessage)
+            XCTAssertEqual(inputSI, decodedSI)
+
+            let inputIS: [Int: String] = [ 0: "zero", 1: "one", 2: "two", 3: "three" ]
+            // Test as a DBus Array
+            dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
+            try encoder.encode(inputIS, to: dbusMessage, signature: "a{is}")
+            let decodedIS = try decoder.decode([Int: String].self, from: dbusMessage)
+            XCTAssertEqual(inputIS, decodedIS)
         } catch {
             XCTFail("\(error)")
         }

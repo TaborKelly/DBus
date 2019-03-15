@@ -18,7 +18,7 @@ extension _DBusEncoder {
 
         var nestedCodingPath: [CodingKey] {
             Log.entry("")
-            return self.codingPath + [AnyCodingKey(intValue: self.count)!]
+            return self.codingPath + [AnyCodingKey(intValue: self.count)]
         }
 
         var userInfo: [CodingUserInfoKey: Any]

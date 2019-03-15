@@ -200,7 +200,7 @@ final class DummyKeyedDecodingContainer<Key> where Key: CodingKey {
 
 extension DummyKeyedDecodingContainer: KeyedDecodingContainerProtocol {
     var allKeys: [Key] {
-        return []
+        return [Key(stringValue: "Foo")!]
     }
 
     func contains(_ key: Key) -> Bool {

@@ -159,8 +159,22 @@ extension _DBusEncoder.KeyedContainer: _DBusEncodingContainer {
     }
 
     func encodeKey(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ key: AnyCodingKey) throws {
-        try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
-                                                              codingPath: codingPath, key.stringValue)
+        let t = try sigIter.getCurrentType()
+        switch t {
+        case .byte, .int16, .uint16, .int32, .uint32, .int64, .uint64, .fileDescriptor:
+            guard let i = key.intValue else {
+                throw RuntimeError.generic("_DBusEncoder.KeyedContainer(): Swift did not provide an integer key value!")
+            }
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, i)
+        case .string, .objectPath, .signature:
+            try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
+                                                                  codingPath: codingPath, key.stringValue)
+
+        default:
+            throw RuntimeError.generic("_DBusEncoder.KeyedContainer(): Swift doesn't know how to encode a key type of \(t).")
+        }
+
     }
 
     func encodeValue(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: _DBusEncodingContainer) throws {

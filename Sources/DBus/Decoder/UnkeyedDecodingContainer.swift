@@ -6,7 +6,7 @@ extension _DBusDecoder {
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
         let msgIter: DBusMessageIter
-        let sigIter: DBusSignatureIter
+        let sigIter: DBusSignatureIter // TODO: remove
         var storage: [DBusDecodingContainer] = []
         var currentIndex: Int = 0
 
@@ -26,12 +26,12 @@ extension _DBusDecoder {
         var nestedCodingPath: [CodingKey] {
             Log.entry("")
 
-            return self.codingPath + [AnyCodingKey(intValue: self.count ?? 0)!]
+            return self.codingPath + [AnyCodingKey(intValue: self.count ?? 0)]
         }
     }
 }
 
-extension _DBusDecoder.UnkeyedContainer:DBusDecodingContainer {
+extension _DBusDecoder.UnkeyedContainer: DBusDecodingContainer {
     // TODO: variant and dictionary cases
     func dbusDecode() throws {
         let msgSubIter: DBusMessageIter

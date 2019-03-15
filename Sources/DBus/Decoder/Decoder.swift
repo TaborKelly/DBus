@@ -92,7 +92,12 @@ final class _DBusDecoder {
              .objectPath, .signature:
             container = try _DBusDecoder.SingleValueContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
         case .array:
-            container = try _DBusDecoder.UnkeyedContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
+            let arrayContentsType = try self.sigIter.getElementType()
+            if arrayContentsType == .dictionaryEntry {
+                container = try _DBusDecoder.DBusKeyedContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
+            } else {
+                container = try _DBusDecoder.UnkeyedContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
+            }
         case .struct:
             container = try _DBusDecoder.UnkeyedContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
         case .dictionaryEntry:
@@ -118,17 +123,28 @@ extension _DBusDecoder: Decoder {
 
     func container<Key>(keyedBy type: Key.Type) -> KeyedDecodingContainer<Key> where Key : CodingKey {
         Log.entry("")
-        /*
-        assertCanCreateContainer()
 
-        let container = KeyedContainer<Key>(dbusMessage: self.dbusMessage, codingPath: self.codingPath, userInfo: self.userInfo)
-        self.container = container
+        // Failure case: self.container is nil (we do not expect this)
+        guard let container = self.container else {
+            let signature = "_DBusDecoder.container<Key>(): container is nil, DBus decoding failed?"
+            let container = DummyKeyedDecodingContainer<Key>(codingPath: self.codingPath, userInfo: self.userInfo,
+                                                             signature: signature)
+            return KeyedDecodingContainer(container)
+        }
 
-        return KeyedDecodingContainer(container)
- */
-        let container = DummyKeyedDecodingContainer<Key>(codingPath: self.codingPath, userInfo: self.userInfo,
-                                                         signature: msgIter.getSignature())
-        return KeyedDecodingContainer(container)
+        // Failure case: we decoded something, but not a keyed container (codeable doesn't match DBus message).
+        // This could happen, but we can't throw because Apple?
+        guard let dbusKeyedContainer = container as? DBusKeyedContainer else {
+            let signature = "_DBusDecoder.container<Key>(): container is not DBusKeyedContainer!"
+            let container = DummyKeyedDecodingContainer<Key>(codingPath: self.codingPath, userInfo: self.userInfo,
+                                                             signature: signature)
+            return KeyedDecodingContainer(container)
+        }
+
+        let c = _DBusDecoder.KeyedContainer<Key>(codingPath: self.codingPath,
+                                                 userInfo: self.userInfo,
+                                                 storage: dbusKeyedContainer.storage)
+        return KeyedDecodingContainer(c)
     }
 
     func unkeyedContainer() -> UnkeyedDecodingContainer {

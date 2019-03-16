@@ -93,7 +93,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         case 64:
             self.storage = .basicType(.int64(Int64(value)))
         default:
-            throw RuntimeError.generic("SingleValueContainer.encode(): unsupported Integer width!")
+            throw RuntimeError.logicError("SingleValueContainer.encode(): unsupported Integer width!")
         }
     }
 
@@ -135,7 +135,7 @@ extension _DBusEncoder.SingleValueContainer: SingleValueEncodingContainer {
         case 64:
             self.storage = .basicType(.uint64(UInt64(value)))
         default:
-            throw RuntimeError.generic("SingleValueContainer.encode(): unsupported Integer width!")
+            throw RuntimeError.logicError("SingleValueContainer.encode(): unsupported Integer width!")
         }
     }
 
@@ -197,7 +197,10 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
             try msgIter.append(.signature(value))
 
         default:
-            throw RuntimeError.generic("Can't encode type String because DBus signature says \(t) for path \(codingPath)")
+            let debugDescription = "Can't encode type String because DBus signature says \(t) for path \(codingPath)"
+            let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+            let any: Any? = nil
+            throw EncodingError.invalidValue(any as Any, context)
         }
     }
 
@@ -208,7 +211,10 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         let t = try sigIter.getCurrentType()
         if t != .boolean {
-            throw RuntimeError.generic("Can't encode type Bool because DBus signature says \(t) for path \(codingPath)")
+            let debugDescription = "Can't encode type Bool because DBus signature says \(t) for path \(codingPath)"
+            let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+            let any: Any? = nil
+            throw EncodingError.invalidValue(any as Any, context)
         }
 
         try msgIter.append(argument: .boolean(value))
@@ -228,7 +234,9 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
             t != .int64 &&
             t != .uint64 &&
             t != .fileDescriptor {
-            throw RuntimeError.generic("Can't encode type BinaryInteger because DBus signature says \(t) for path \(codingPath)")
+            let debugDescription = "Can't encode type BinaryInteger because DBus signature says \(t) for path \(codingPath)"
+            let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+            throw EncodingError.invalidValue(value, context)
         }
 
         switch t {
@@ -236,53 +244,67 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
             if let uint8 = UInt8(exactly: value) {
                 try msgIter.append(argument: .byte(uint8))
             } else {
-                throw RuntimeError.generic("Could not encode \(t) as a byte for path \(codingPath)")
+                let debugDescription = "Could not encode \(t) as a byte for path \(codingPath)"
+                let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+                throw EncodingError.invalidValue(value, context)
             }
 
         case .int16:
             if let int16 = Int16(exactly: value) {
                 try msgIter.append(argument: .int16(int16))
             } else {
-                throw RuntimeError.generic("Could not encode \(t) as a int16 for path \(codingPath)")
+                let debugDescription = "Could not encode \(t) as a int16 for path \(codingPath)"
+                let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+                throw EncodingError.invalidValue(value, context)
             }
 
         case .uint16:
             if let uint16 = UInt16(exactly: value) {
                 try msgIter.append(argument: .uint16(uint16))
             } else {
-                throw RuntimeError.generic("Could not encode \(t) as a uint16 for path \(codingPath)")
+                let debugDescription = "Could not encode \(t) as a uint16 for path \(codingPath)"
+                let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+                throw EncodingError.invalidValue(value, context)
             }
 
         case .int32:
             if let int32 = Int32(exactly: value) {
                 try msgIter.append(argument: .int32(int32))
             } else {
-                throw RuntimeError.generic("Could not encode \(t) as a int32 for path \(codingPath)")
+                let debugDescription = "Could not encode \(t) as a int32 for path \(codingPath)"
+                let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+                throw EncodingError.invalidValue(value, context)
             }
 
         case .uint32, .fileDescriptor:
             if let uint32 = UInt32(exactly: value) {
                 try msgIter.append(argument: .uint32(uint32))
             } else {
-                throw RuntimeError.generic("Could not encode \(t) as a uint32 for path \(codingPath)")
+                let debugDescription = "Could not encode \(t) as a uint32 for path \(codingPath)"
+                let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+                throw EncodingError.invalidValue(value, context)
             }
 
         case .int64:
             if let int64 = Int64(exactly: value) {
                 try msgIter.append(argument: .int64(int64))
             } else {
-                throw RuntimeError.generic("Could not encode \(t) as a int64 for path \(codingPath)")
+                let debugDescription = "Could not encode \(t) as a int64 for path \(codingPath)"
+                let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+                throw EncodingError.invalidValue(value, context)
             }
 
         case .uint64:
             if let uint64 = UInt64(exactly: value) {
                 try msgIter.append(argument: .uint64(uint64))
             } else {
-                throw RuntimeError.generic("Could not encode \(t) as a uint64 for path \(codingPath)")
+                let debugDescription = "Could not encode \(t) as a uint64 for path \(codingPath)"
+                let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+                throw EncodingError.invalidValue(value, context)
             }
 
         default:
-            throw RuntimeError.generic("logic error in _DBusEncoder.SingleValueContainer.dbusEncode<T>(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: T) throws where T : BinaryInteger & Encodable")
+            throw RuntimeError.logicError("logic error in _DBusEncoder.SingleValueContainer.dbusEncode<T>(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: T) throws where T : BinaryInteger & Encodable")
         }
     }
 
@@ -293,7 +315,9 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         let t = try sigIter.getCurrentType()
         if t != .double {
-            throw RuntimeError.generic("Can't encode type Double because DBus signature says \(t) for path \(codingPath)")
+            let debugDescription = "Can't encode type Double because DBus signature says \(t) for path \(codingPath)"
+            let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+            throw EncodingError.invalidValue(value, context)
         }
 
         try msgIter.append(argument: .double(value))
@@ -306,7 +330,9 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         let t = try sigIter.getCurrentType()
         if t != .double {
-            throw RuntimeError.generic("Can't encode type Float because DBus signature says \(t) for path \(codingPath)")
+            let debugDescription = "Can't encode type Float because DBus signature says \(t) for path \(codingPath)"
+            let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+            throw EncodingError.invalidValue(value, context)
         }
 
         let double = Double(value)
@@ -379,7 +405,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
             // Close the variant
             let b = Bool(dbus_message_iter_close_container(&msgIterIn.iter, &msgIter.iter))
             if b == false {
-                throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.SingleValueContainer.dbusEncode()")
+                throw RuntimeError.logicError("dbus_message_iter_close_container() failed in _DBusEncoder.SingleValueContainer.dbusEncode()")
             }
         }
 
@@ -389,7 +415,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         Log.entry("")
 
         guard let storage = self.storage else {
-            throw RuntimeError.generic("SingleValueContainer.dbusEncode: self.storage is nil!")
+            throw RuntimeError.logicError("SingleValueContainer.dbusEncode: self.storage is nil!")
         }
 
         switch storage {
@@ -405,7 +431,9 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         let t = try sigIter.getCurrentType()
         if t != .double {
-            throw RuntimeError.generic("Can't encode type Double because DBus signature says \(t) for path \(codingPath)")
+            let debugDescription = "Can't encode type Double because DBus signature says \(t) for path \(codingPath)"
+            let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+            throw EncodingError.invalidValue(value, context)
         }
 
         try msgIter.append(argument: .double(value))
@@ -416,7 +444,9 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         let t = try sigIter.getCurrentType()
         if t != .double {
-            throw RuntimeError.generic("Can't encode type Float because DBus signature says \(t) for path \(codingPath)")
+            let debugDescription = "Can't encode type Float because DBus signature says \(t) for path \(codingPath)"
+            let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+            throw EncodingError.invalidValue(value, context)
         }
 
         let double = Double(value)

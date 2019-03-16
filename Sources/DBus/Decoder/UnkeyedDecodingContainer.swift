@@ -34,7 +34,7 @@ extension _DBusDecoder {
                 msgSubIter = try self.msgIter.recurse()
                 let _ = msgIter.next()
             default:
-                throw RuntimeError.generic("Unhandeled case in _DBusDecoder.UnkeyedContainer.dbusDecode()")
+                throw RuntimeError.logicError("Unhandeled case in _DBusDecoder.UnkeyedContainer.dbusDecode()")
             }
 
             repeat {

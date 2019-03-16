@@ -27,7 +27,7 @@ extension _DBusDecoder {
                  .string, .objectPath, .signature:
                 storage = try msgIter.getBasic()
             default:
-                throw RuntimeError.generic("Unhandeled case in _DBusDecoder.SingleValueContainer.dbusDecode()")
+                throw RuntimeError.logicError("Unhandeled case in _DBusDecoder.SingleValueContainer.dbusDecode()")
             }
         }
     }

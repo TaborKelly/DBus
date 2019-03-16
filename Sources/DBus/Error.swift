@@ -44,6 +44,7 @@ public struct DBusError: Error, Equatable, Hashable {
 
 public enum RuntimeError: Error {
     case generic(String)
+    case logicError(String) // we encountered an error case that we never expected. Probably due to a bug in the code.
 }
 
 // Given a swift string, make a copy of the C string (char *) and return a pointer to it

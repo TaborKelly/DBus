@@ -83,7 +83,7 @@ final class _DBusDecoder {
 
     func dbusDecode() throws {
         guard let msgIter = self.msgIter else {
-            throw RuntimeError.generic("_DBusDecoder.dbusDecode(): self.msgIter is nil!")
+            throw RuntimeError.logicError("_DBusDecoder.dbusDecode(): self.msgIter is nil!")
         }
 
         self.container = try decodeValue(codingPath: self.codingPath, userInfo: self.userInfo, msgIter: msgIter)
@@ -183,12 +183,15 @@ func decodeValue(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any],
         } else {
             container = _DBusDecoder.DBusUnkeyedContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
         }
+
     case .struct:
         container = _DBusDecoder.DBusUnkeyedContainer(codingPath: codingPath, userInfo: userInfo,
                                                       msgIter: msgIter)
 
     default:
-        throw RuntimeError.generic("Unhandeled case in decodeValue()")
+        let debugDescription = "decodeValue(): does not understand this data."
+        let context = DecodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+        throw DecodingError.dataCorrupted(context)
     }
 
     try container.dbusDecode()

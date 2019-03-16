@@ -101,7 +101,10 @@ extension _DBusEncoder.KeyedContainer: _DBusEncodingContainer {
             msgIter = msgVariantIter!
 
         default:
-            throw RuntimeError.generic("_DBusEncoder.KeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)")
+            let debugDescription = "Swift doesn't know what to do with a key of type boolean!"
+            let context = EncodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+            let any: Any? = nil
+            throw EncodingError.invalidValue(any as Any, context)
         }
 
         // Just some signature checking
@@ -111,13 +114,19 @@ extension _DBusEncoder.KeyedContainer: _DBusEncodingContainer {
         case .dictionaryEntry:
             break
         default:
-            throw RuntimeError.generic("_DBusEncoder.KeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)")
+            let debugDescription = "_DBusEncoder.KeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)"
+            let context = EncodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+            let any: Any? = nil
+            throw EncodingError.invalidValue(any as Any, context)
         }
 
         let sigDictIter = try sigArrayIter.recurse()
         let sigValueIter = try sigArrayIter.recurse()
         if sigValueIter.next() == false {
-            throw RuntimeError.generic("_DBusEncoder.KeyedContainer.dbusEncode() failed to deduce value type for path \(codingPath)")
+            let debugDescription = "_DBusEncoder.KeyedContainer.dbusEncode() failed to deduce value type for path \(codingPath)"
+            let context = EncodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+            let any: Any? = nil
+            throw EncodingError.invalidValue(any as Any, context)
         }
 
         Log.debug("sigIter.getSignature() \(sigIter.getSignature())")
@@ -139,21 +148,21 @@ extension _DBusEncoder.KeyedContainer: _DBusEncodingContainer {
             // Close the dict
             let b = Bool(dbus_message_iter_close_container(&msgArrayIter.iter, &msgDictIter.iter))
             if b == false {
-                throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.KeyedContainer.dbusEncode()")
+                throw RuntimeError.logicError("dbus_message_iter_close_container() failed in _DBusEncoder.KeyedContainer.dbusEncode()")
             }
         }
 
         // Finally, close the array
         let b = Bool(dbus_message_iter_close_container(&msgIter.iter, &msgArrayIter.iter))
         if b == false {
-            throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.KeyedContainer.dbusEncode()")
+            throw RuntimeError.logicError("dbus_message_iter_close_container() failed in _DBusEncoder.KeyedContainer.dbusEncode()")
         }
 
         // If necessary, close the variant
         if msgVariantIter != nil {
             let b = Bool(dbus_message_iter_close_container(&msgIterIn.iter, &msgIter.iter))
             if b == false {
-                throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.KeyedContainer.dbusEncode()")
+                throw RuntimeError.logicError("dbus_message_iter_close_container() failed in _DBusEncoder.KeyedContainer.dbusEncode()")
             }
         }
     }
@@ -163,7 +172,10 @@ extension _DBusEncoder.KeyedContainer: _DBusEncodingContainer {
         switch t {
         case .byte, .int16, .uint16, .int32, .uint32, .int64, .uint64, .fileDescriptor:
             guard let i = key.intValue else {
-                throw RuntimeError.generic("_DBusEncoder.KeyedContainer(): Swift did not provide an integer key value!")
+                let debugDescription = "_DBusEncoder.KeyedContainer(): Swift did not provide an integer key value!"
+                let context = EncodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+                let any: Any? = nil
+                throw EncodingError.invalidValue(any as Any, context)
             }
             try _DBusEncoder.SingleValueContainer.dbusEncodeBasic(msgIter: msgIter, sigIter: sigIter,
                                                                   codingPath: codingPath, i)
@@ -172,9 +184,11 @@ extension _DBusEncoder.KeyedContainer: _DBusEncodingContainer {
                                                                   codingPath: codingPath, key.stringValue)
 
         default:
-            throw RuntimeError.generic("_DBusEncoder.KeyedContainer(): Swift doesn't know how to encode a key type of \(t).")
+            let debugDescription = "_DBusEncoder.KeyedContainer(): Swift doesn't know how to encode a key type of \(t)."
+            let context = EncodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+            let any: Any? = nil
+            throw EncodingError.invalidValue(any as Any, context)
         }
-
     }
 
     func encodeValue(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: _DBusEncodingContainer) throws {

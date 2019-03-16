@@ -22,8 +22,7 @@ HeliumLogger.use(.debug) // For even more debug replace .debug with .entry
 - Better test harness.
 - Revisit file handles (`UNIX_FD h (104)`). The [DBus specification](https://dbus.freedesktop.org/doc/dbus-specification.html) says that they are unsigned 32 bit integers, but libdbus treats them as signed 32 bit integers, which would seem to make more sense.
 - Test on 32 bit platforms.
-- Remove remaining printfs().
-- Use Codable error types whenever possible.
+- Remove remaining print()s.
 - Check for memory leaks
 
 ## Licenses

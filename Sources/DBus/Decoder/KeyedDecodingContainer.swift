@@ -65,13 +65,13 @@ extension _DBusDecoder {
 
             let outerType = try self.msgIter.getType()
             if outerType != .array {
-                throw RuntimeError.generic("_DBusDecoder.KeyedContainer.dbusDecode() can't handle a \(outerType)")
+                throw RuntimeError.logicError("_DBusDecoder.KeyedContainer.dbusDecode() can't handle a \(outerType)")
             }
 
             let msgArrayIter = try self.msgIter.recurse()
             let innerType = try self.msgIter.getElementType()
             if innerType != .dictionaryEntry {
-                throw RuntimeError.generic("_DBusDecoder.KeyedContainer.dbusDecode() can't handle a \(innerType)")
+                throw RuntimeError.logicError("_DBusDecoder.KeyedContainer.dbusDecode() can't handle a \(innerType)")
             }
 
             repeat {
@@ -112,6 +112,16 @@ extension _DBusDecoder {
 }
 
 extension _DBusDecoder.KeyedContainer: KeyedDecodingContainerProtocol {
+    func getContainer(_ key: Key) throws -> DBusDecodingContainer {
+        guard let container = self.storage[key.stringValue] else {
+            let debugDescription = "_DBusDecoder.KeyedContainer.getContainer(): key \(key) not found."
+            let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+            throw DecodingError.keyNotFound(key, context)
+        }
+
+        return container
+    }
+
     var allKeys: [Key] {
         Log.entry("")
 
@@ -135,9 +145,7 @@ extension _DBusDecoder.KeyedContainer: KeyedDecodingContainerProtocol {
     func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T : Decodable {
         Log.entry("")
 
-        guard let container = self.storage[key.stringValue] else {
-            throw RuntimeError.generic("Could not find key \(key)")
-        }
+        let container = try getContainer(key)
         let decoder = DBusDecoder()
         let value = try decoder.decode(T.self, decodingContainer: container)
 
@@ -148,12 +156,12 @@ extension _DBusDecoder.KeyedContainer: KeyedDecodingContainerProtocol {
     func nestedUnkeyedContainer(forKey key: Key) throws -> UnkeyedDecodingContainer {
         Log.entry("")
 
-        guard let container = self.storage[key.stringValue] else {
-            throw RuntimeError.generic("Could not find key \(key)")
-        }
+        let container = try getContainer(key)
 
         guard let unkeyedContainer = container as? _DBusDecoder.UnkeyedContainer else {
-            throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "cannot decode nested container for key: \(key)")
+            let debugDescription = "_DBusDecoder.KeyedContainer.nestedUnkeyedContainer(): wrong container type."
+            let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+            throw DecodingError.typeMismatch(_DBusDecoder.KeyedContainer<Key>.self, context)
         }
 
         return unkeyedContainer
@@ -163,12 +171,12 @@ extension _DBusDecoder.KeyedContainer: KeyedDecodingContainerProtocol {
                                     forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
         Log.entry("")
 
-        guard let container = self.storage[key.stringValue] else {
-            throw RuntimeError.generic("Could not find key \(key)")
-        }
+        let container = try getContainer(key)
 
         guard let keyedContainer = container as? _DBusDecoder.KeyedContainer<NestedKey> else {
-            throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "cannot decode nested container for key: \(key)")
+            let debugDescription = "_DBusDecoder.KeyedContainer.nestedContainer<NestedKey>: wrong container type."
+            let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+            throw DecodingError.typeMismatch(_DBusDecoder.KeyedContainer<Key>.self, context)
         }
 
         return KeyedDecodingContainer(keyedContainer)

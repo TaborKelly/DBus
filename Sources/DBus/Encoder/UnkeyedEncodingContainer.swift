@@ -118,7 +118,10 @@ extension _DBusEncoder.UnkeyedContainer: _DBusEncodingContainer {
                 unkeyedType = .struct
                 break
             default:
-                throw RuntimeError.generic("_DBusEncoder.UnkeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)")
+                let debugDescription = "_DBusEncoder.UnkeyedContainer.dbusEncode() can't encode \(t) for path \(codingPath)"
+                let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
+                let any: Any? = nil
+                throw EncodingError.invalidValue(any as Any, context)
             }
         }
 
@@ -138,14 +141,14 @@ extension _DBusEncoder.UnkeyedContainer: _DBusEncodingContainer {
         // Finally close the container
         let b = Bool(dbus_message_iter_close_container(&msgIter.iter, &msgSubIter.iter))
         if b == false {
-            throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.UnkeyedContainer.dbusEncode()")
+            throw RuntimeError.logicError("dbus_message_iter_close_container() failed in _DBusEncoder.UnkeyedContainer.dbusEncode()")
         }
 
         if t == .variant {
             // Close the variant
             let b = Bool(dbus_message_iter_close_container(&msgIterIn.iter, &msgIter.iter))
             if b == false {
-                throw RuntimeError.generic("dbus_message_iter_close_container() failed in _DBusEncoder.UnkeyedContainer.dbusEncode()")
+                throw RuntimeError.logicError("dbus_message_iter_close_container() failed in _DBusEncoder.UnkeyedContainer.dbusEncode()")
             }
         }
     }

@@ -2,7 +2,7 @@ import Foundation
 import LoggerAPI
 
 /**
- An object that decodes instances of a data type fromDBus objects.
+ An object that decodes instances of a data type from DBus messages (DBusMessage).
  */
 final public class DBusDecoder {
     public init() {}
@@ -42,7 +42,7 @@ final public class DBusDecoder {
     public func decode<T>(_ type: T.Type, from messageIter: DBusMessageIter) throws -> T where T : Decodable {
         Log.entry("")
 
-        let decoder = try _DBusDecoder(userInfo: self.userInfo, msgIter: messageIter)
+        let decoder = _DBusDecoder(userInfo: self.userInfo, msgIter: messageIter)
         try decoder.dbusDecode()
 
         return try T(from: decoder)
@@ -52,7 +52,7 @@ final public class DBusDecoder {
     func decode<T>(_ type: T.Type, decodingContainer: DBusDecodingContainer) throws -> T where T : Decodable {
         Log.entry("")
 
-        let decoder = try _DBusDecoder(userInfo: self.userInfo, decodingContainer: decodingContainer)
+        let decoder = _DBusDecoder(userInfo: self.userInfo, decodingContainer: decodingContainer)
 
         return try T(from: decoder)
     }
@@ -61,31 +61,32 @@ final public class DBusDecoder {
 final class _DBusDecoder {
     var codingPath: [CodingKey] = []
     let userInfo: [CodingUserInfoKey : Any]
-    var container: DBusDecodingContainer?
-    private var msgIter: DBusMessageIter
-    private var sigIter: DBusSignatureIter
 
-    init(userInfo: [CodingUserInfoKey : Any], msgIter: DBusMessageIter) throws {
+    // The outermost _DBusDecoder decodes from the DBusMessageIter, but _DBusDecoder can be instantiated recusively in
+    // which case the children will use DBusDecodingContainer.
+    var container: DBusDecodingContainer?
+    private var msgIter: DBusMessageIter?
+
+    init(userInfo: [CodingUserInfoKey : Any], msgIter: DBusMessageIter) {
         Log.entry("")
 
         self.userInfo = userInfo
-        self.msgIter = msgIter // TODO: make optional
-        self.sigIter = try DBusSignatureIter(msgIter.getSignature()) // TODO: remove
+        self.msgIter = msgIter
     }
 
-    init(userInfo: [CodingUserInfoKey : Any], decodingContainer: DBusDecodingContainer) throws {
+    init(userInfo: [CodingUserInfoKey : Any], decodingContainer: DBusDecodingContainer) {
         Log.entry("")
 
         self.userInfo = userInfo
         self.container = decodingContainer
-
-        // dummy values, we won't need them
-        self.msgIter = DBusMessageIter()
-        self.sigIter = try DBusSignatureIter("")
-    }
+     }
 
     func dbusDecode() throws {
-        self.container = try decodeValue(codingPath: self.codingPath, userInfo: self.userInfo, msgIter: self.msgIter)
+        guard let msgIter = self.msgIter else {
+            throw RuntimeError.generic("_DBusDecoder.dbusDecode(): self.msgIter is nil!")
+        }
+
+        self.container = try decodeValue(codingPath: self.codingPath, userInfo: self.userInfo, msgIter: msgIter)
     }
 }
 
@@ -127,28 +128,27 @@ extension _DBusDecoder: Decoder {
     func singleValueContainer() throws -> SingleValueDecodingContainer {
         Log.entry("")
 
-        // single value container with basic type
-        if let dbusSingleValueContainer = container as? DBusSingleValueContainer {
-            return _DBusDecoder.SingleValueContainer(codingPath: dbusSingleValueContainer.codingPath,
-                                                     userInfo: dbusSingleValueContainer.userInfo,
-                                                     storage: dbusSingleValueContainer.storage)
-        // single value container with complex type
-        } else if let container = self.container {
-            return _DBusDecoder.SingleValueContainer(codingPath: container.codingPath,
-                                                     userInfo: container.userInfo,
-                                                     storage: .container(container))
-        } else { // error case
+        guard let container = self.container as? DBusSingleValueContainer else {
             let debugDescription = "Cannot get single value decoding container."
             let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
-            throw DecodingError.valueNotFound(SingleValueContainer.self, context)
+            throw DecodingError.valueNotFound(DBusSingleValueContainer.self, context)
         }
+
+        guard let storage = container.storage else {
+            let debugDescription = "Cannot get single value decoding container: storage nil!"
+            let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+            throw DecodingError.valueNotFound(DBusSingleValueContainer.self, context)
+        }
+
+        return _DBusDecoder.SingleValueContainer(codingPath: container.codingPath,
+                                                 userInfo: container.userInfo,
+                                                 storage: storage)
     }
 }
 
 protocol DBusDecodingContainer: class {
     var codingPath: [CodingKey] { get /*set*/ }
     var userInfo: [CodingUserInfoKey : Any] { get }
-    var msgIter: DBusMessageIter { get /*set*/ } // TODO: remove.
 
     // Decode the DBus values, but DO NOT ADVANCE THE (outermost) ITERATOR
     func dbusDecode() throws
@@ -172,8 +172,8 @@ func decodeValue(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any],
     switch valueType {
     case .byte, .boolean, .int16, .uint16, .int32, .uint32, .int64, .uint64, .double, .fileDescriptor,
          .string, .objectPath, .signature:
-        container = try _DBusDecoder.DBusSingleValueContainer(codingPath: codingPath, userInfo: userInfo,
-                                                              msgIter: msgIter)
+        container = _DBusDecoder.DBusSingleValueContainer(codingPath: codingPath, userInfo: userInfo,
+                                                          msgIter: msgIter)
 
     case .array:
         let arrayContentsType = try msgIter.getElementType()
@@ -181,11 +181,11 @@ func decodeValue(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any],
             container = try _DBusDecoder.DBusKeyedContainer(codingPath: codingPath, userInfo: userInfo,
                                                             msgIter: msgIter)
         } else {
-            container = try _DBusDecoder.DBusUnkeyedContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
+            container = _DBusDecoder.DBusUnkeyedContainer(codingPath: codingPath, userInfo: userInfo, msgIter: msgIter)
         }
     case .struct:
-        container = try _DBusDecoder.DBusUnkeyedContainer(codingPath: codingPath, userInfo: userInfo,
-                                                          msgIter: msgIter)
+        container = _DBusDecoder.DBusUnkeyedContainer(codingPath: codingPath, userInfo: userInfo,
+                                                      msgIter: msgIter)
 
     default:
         throw RuntimeError.generic("Unhandeled case in decodeValue()")

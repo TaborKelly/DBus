@@ -9,16 +9,14 @@ extension _DBusDecoder {
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
         let msgIter: DBusMessageIter
-        let sigIter: DBusSignatureIter // TODO: remove
         var storage: [DBusDecodingContainer] = []
 
-        init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], msgIter: DBusMessageIter) throws {
+        init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], msgIter: DBusMessageIter) {
             Log.entry("")
 
             self.codingPath = codingPath
             self.userInfo = userInfo
             self.msgIter = msgIter
-            self.sigIter = try DBusSignatureIter(msgIter.getSignature())
         }
 
         var nestedCodingPath: [CodingKey] {
@@ -30,7 +28,7 @@ extension _DBusDecoder {
         func dbusDecode() throws {
             let msgSubIter: DBusMessageIter
 
-            let outerType = try self.sigIter.getCurrentType()
+            let outerType = try self.msgIter.getType()
             switch outerType {
             case .array, .struct:
                 msgSubIter = try self.msgIter.recurse()

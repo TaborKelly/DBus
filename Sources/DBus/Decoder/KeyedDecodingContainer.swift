@@ -9,7 +9,6 @@ extension _DBusDecoder {
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
         let msgIter: DBusMessageIter
-        let sigIter: DBusSignatureIter // TODO: remove
         var storage: [String: DBusDecodingContainer] = [:]
 
         init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], msgIter: DBusMessageIter) throws {
@@ -18,7 +17,6 @@ extension _DBusDecoder {
             self.codingPath = codingPath
             self.userInfo = userInfo
             self.msgIter = msgIter
-            self.sigIter = try DBusSignatureIter(msgIter.getSignature())
         }
 
         func nestedCodingPath(_ key: String) -> [CodingKey] {
@@ -62,17 +60,16 @@ extension _DBusDecoder {
             }
         }
 
-        // TODO: variant and dictionary cases
         func dbusDecode() throws {
             Log.entry("")
 
-            let outerType = try self.sigIter.getCurrentType()
+            let outerType = try self.msgIter.getType()
             if outerType != .array {
                 throw RuntimeError.generic("_DBusDecoder.KeyedContainer.dbusDecode() can't handle a \(outerType)")
             }
 
             let msgArrayIter = try self.msgIter.recurse()
-            let innerType = try self.sigIter.getElementType()
+            let innerType = try self.msgIter.getElementType()
             if innerType != .dictionaryEntry {
                 throw RuntimeError.generic("_DBusDecoder.KeyedContainer.dbusDecode() can't handle a \(innerType)")
             }
@@ -101,7 +98,7 @@ extension _DBusDecoder {
     final class KeyedContainer<Key> where Key: CodingKey {
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
-        let storage: [String: DBusDecodingContainer] // TODO: make this optional
+        let storage: [String: DBusDecodingContainer]
 
         init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any],
              storage: [String: DBusDecodingContainer]) {
@@ -151,9 +148,8 @@ extension _DBusDecoder.KeyedContainer: KeyedDecodingContainerProtocol {
     func nestedUnkeyedContainer(forKey key: Key) throws -> UnkeyedDecodingContainer {
         Log.entry("")
 
-        let k = AnyCodingKey(key)
-        guard let container = self.storage[k.stringValue] else {
-            throw RuntimeError.generic("Could not find key \(k)")
+        guard let container = self.storage[key.stringValue] else {
+            throw RuntimeError.generic("Could not find key \(key)")
         }
 
         guard let unkeyedContainer = container as? _DBusDecoder.UnkeyedContainer else {
@@ -167,9 +163,8 @@ extension _DBusDecoder.KeyedContainer: KeyedDecodingContainerProtocol {
                                     forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
         Log.entry("")
 
-        let k = AnyCodingKey(key)
-        guard let container = self.storage[k.stringValue] else {
-            throw RuntimeError.generic("Could not find key \(k)")
+        guard let container = self.storage[key.stringValue] else {
+            throw RuntimeError.generic("Could not find key \(key)")
         }
 
         guard let keyedContainer = container as? _DBusDecoder.KeyedContainer<NestedKey> else {
@@ -182,19 +177,10 @@ extension _DBusDecoder.KeyedContainer: KeyedDecodingContainerProtocol {
     func superDecoder() throws -> Decoder {
         Log.entry("")
         fatalError("Unimplemented") // What does this even mean?
-        /*
-
-        return try _DBusDecoder(userInfo: self.userInfo, msgIter: self.msgIter) */
     }
 
     func superDecoder(forKey key: Key) throws -> Decoder {
         Log.entry("")
         fatalError("Unimplemented") // What does this even mean?
-
-        /*
-        let decoder = try _DBusDecoder(userInfo: self.userInfo, msgIter: self.msgIter)
-        decoder.codingPath = [key]
-
-        return decoder*/
     }
 }

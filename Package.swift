@@ -24,7 +24,7 @@ let package = Package(
         ),
         .testTarget(
             name: "DBusTests",
-            dependencies: ["DBus", "HeliumLogger", "LoggerAPI"]
+            dependencies: ["AnyCodable", "DBus", "HeliumLogger", "LoggerAPI"]
         )
     ],
     swiftLanguageVersions: [4]

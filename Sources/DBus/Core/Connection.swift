@@ -116,6 +116,14 @@ public final class DBusConnection {
 
     // MARK: - Methods
 
+    public func requestName(_ name: String, flags: UInt32 = 0) throws {
+        let error = DBusError()
+        let i = dbus_bus_request_name(self.internalPointer, name, flags, &error.cError)
+        if i > 0 && error.isSet {
+            throw error
+        }
+    }
+
     /// As long as the connection is open, this function will block until it can read or write,
     /// then read or write, then return `true`.
     ///

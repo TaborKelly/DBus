@@ -79,7 +79,7 @@ public class DBusError: Error, Equatable, CustomStringConvertible /*, Hashable*/
         dbus_error_init(&cError);
     }
 
-    convenience init(name: String, message: String = "") throws {
+    public convenience init(name: String, message: String = "") throws {
         self.init()
 
         let validationError = DBusError()

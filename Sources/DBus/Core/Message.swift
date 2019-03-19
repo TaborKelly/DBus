@@ -78,9 +78,18 @@ public final class DBusMessage {
     }
 
     /// Constructs a message that is a reply to a method call.
-    public init(methodReturn: DBusMessage) throws {
+    public init(replyTo: DBusMessage) throws {
 
-        guard let internalPointer = dbus_message_new_method_return(methodReturn.internalPointer)
+        guard let internalPointer = dbus_message_new_method_return(replyTo.internalPointer)
+            else { throw RuntimeError.generic("dbus_message_new_method_return() failed") }
+
+        self.internalPointer = internalPointer
+    }
+
+    /// Constructs a message that is an error reply to a method call.
+    public init(replyTo: DBusMessage, errorName: String, errorMessage: String) throws {
+
+        guard let internalPointer = dbus_message_new_error(replyTo.internalPointer, errorName, errorMessage)
             else { throw RuntimeError.generic("dbus_message_new_method_return() failed") }
 
         self.internalPointer = internalPointer
@@ -256,6 +265,10 @@ public final class DBusMessage {
         return interface
     }
 
+    public func getInterface() -> String {
+        return String(cString: dbus_message_get_interface(self.internalPointer))
+    }
+
     /// Sets the interface this message is being sent to (for `DBusMessageType.MethodCall`)
     /// or the interface a signal is being emitted from (for `DBusMessageType.Signal`).
     public func setInterface(_ newValue: DBusInterface?) throws {
@@ -297,6 +310,10 @@ public final class DBusMessage {
             else { fatalError("Invalid member \(string)") }
 
         return member
+    }
+
+    func getMember() -> String {
+        return String(cString: dbus_message_get_member(self.internalPointer))
     }
 
     /// Sets the interface member being invoked (`DBusMessageType.MethodCall`)

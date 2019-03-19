@@ -1,7 +1,5 @@
 //
 //  Adaptor.swift
-//  Named adaptor vs adapter to match Qt as well at sometimes used style that an adapter is a person and an adaptor is
-//  a thing.
 //
 //  Created by Tabor Kelly on 3/18/19.
 //
@@ -33,14 +31,26 @@ private func objectPathMessageFunction(connection: OpaquePointer?, message: Opaq
     return adaptor.objectPathMessage(message)
 }
 
+/**
+ This is how the Adaptor will call you back with messages. The `DBusMessage` is the message from the client. The
+ `DBusConnection` is passed as a convience in case you wish to use it to send a signal. If you return a `DBusMessage` it
+ will be sent as a reply to the client. You will be called on the `DBusManager` dispatch queue, so don't block.
+ */
+public typealias AdaptorCall = (DBusMessage, DBusConnection) -> (DBusMessage?)
+
+/**
+ This Adaptor lets you expose your Swift code so that it can be called over DBus. That is, it lets you act as a DBus
+ Server. Named adaptor vs adapter to match Qt as well as the sometimes used style that an adapter is a person and an
+ adaptor is a thing.
+ */
 public class Adaptor {
     private var connection: DBusConnection
     // The outermost String is the name of the interface, the inner string is the name of the method.
-    private var interfaces: [String: [String: (DBusMessage, DBusConnection) -> (DBusMessage?)]] = [:]
+    private var interfaces: [String: [String: AdaptorCall]] = [:]
     private var path: String
     private var vtable: DBusObjectPathVTable
 
-    public init(connection: DBusConnection, objectPath: String) throws {
+    init(connection: DBusConnection, objectPath: String) throws {
         Log.entry("")
 
         self.connection = connection
@@ -67,12 +77,18 @@ public class Adaptor {
         }
     }
 
-    public func addMethod(interfaceName: String, memberName: String, fn: @escaping (DBusMessage, DBusConnection) -> (DBusMessage?)) {
-        if var i = self.interfaces[interfaceName] {
-            i[memberName] = fn
-            self.interfaces[interfaceName] = i
+    /**
+     - Parameters:
+         - interface: DBus interface name to register fn for.
+         - member: The member name to register fn for.
+         - fn: The function to call when this interface + member is called
+     */
+    public func addMethod(interface: String, member: String, fn: @escaping AdaptorCall) {
+        if var i = self.interfaces[interface] {
+            i[member] = fn
+            self.interfaces[interface] = i
         } else {
-            self.interfaces[interfaceName] = [memberName: fn]
+            self.interfaces[interface] = [member: fn]
         }
     }
 
@@ -93,7 +109,7 @@ public class Adaptor {
 
         if let reply = fn(message, self.connection) {
             do {
-                try self.connection.send(message: reply)
+                let _ = try self.connection.send(message: reply)
             } catch {
                 Log.error("self.connection.send(message: reply) failed.")
             }

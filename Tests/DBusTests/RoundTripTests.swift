@@ -65,8 +65,8 @@ final class RoundTripTests: XCTestCase {
     func testEchoS() {
         do {
             try manager.connection.requestName("Bar.Foo")
-            let adaptor = try Adaptor(connection: manager.connection, objectPath: "/Foo/Bar")
-            adaptor.addMethod(interfaceName: "Bar.Foo", memberName: "echoS", fn: echoS)
+            let adaptor = try manager.newAdaptor(objectPath: "/Foo/Bar")
+            adaptor.addMethod(interface: "Bar.Foo", member: "echoS", fn: echoS)
             let sf = SignalFilter(interface: "Bar.Foo",
                                   signalName: "signalS",
                                   fn: signalS)

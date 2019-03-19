@@ -1,6 +1,8 @@
 *.xcuserstate
 Packages/*
 .build
+build/
 DBus.xcodeproj/*
 *.pins
 .DS_Store
+docs/

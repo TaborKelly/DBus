@@ -26,6 +26,7 @@ HeliumLogger.use(.debug) // For even more debug replace .debug with .entry
 - Remove remaining print()s.
 - Check for memory leaks
 - Consider removing all debug logging from the Codable code, they make a lot of method calls.
+- Server side DBus property support.
 
 ## Source code organization
 - `DBus` - things that don't fit in a more specific subdirectory. Mostly higher level abstractions.

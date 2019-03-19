@@ -170,6 +170,10 @@ public final class DBusManager {
         return r.replyMessage
     }
 
+    public func newAdaptor(objectPath: String) throws -> Adaptor {
+        return try Adaptor(connection: self.connection, objectPath: objectPath)
+    }
+
     func addWatch(watch: OpaquePointer?) -> dbus_bool_t {
         print("DBusManager.addWatch()")
 

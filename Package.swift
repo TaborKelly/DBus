@@ -16,7 +16,7 @@ let package = Package(
     targets: [
         .target(
             name: "DBus",
-            dependencies: ["LoggerAPI"]
+            dependencies: ["AnyCodable", "LoggerAPI"]
         ),
         .target(
             name: "DBusClient",

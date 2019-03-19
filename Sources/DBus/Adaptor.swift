@@ -36,7 +36,7 @@ private func objectPathMessageFunction(connection: OpaquePointer?, message: Opaq
 public class Adaptor {
     private var connection: DBusConnection
     // The outermost String is the name of the interface, the inner string is the name of the method.
-    private var interfaces: [String: [String: (DBusMessage) -> (DBusMessage?)]] = [:]
+    private var interfaces: [String: [String: (DBusMessage, DBusConnection) -> (DBusMessage?)]] = [:]
     private var path: String
     private var vtable: DBusObjectPathVTable
 
@@ -67,7 +67,7 @@ public class Adaptor {
         }
     }
 
-    public func addMethod(interfaceName: String, memberName: String, fn: @escaping (DBusMessage) -> (DBusMessage?)) {
+    public func addMethod(interfaceName: String, memberName: String, fn: @escaping (DBusMessage, DBusConnection) -> (DBusMessage?)) {
         if var i = self.interfaces[interfaceName] {
             i[memberName] = fn
             self.interfaces[interfaceName] = i
@@ -91,7 +91,7 @@ public class Adaptor {
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED
         }
 
-        if let reply = fn(message) {
+        if let reply = fn(message, self.connection) {
             do {
                 try self.connection.send(message: reply)
             } catch {

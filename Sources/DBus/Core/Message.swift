@@ -7,6 +7,7 @@
 //
 
 import CDBus
+import AnyCodable
 
 /// Message to be sent or received over a `DBusConnection`.
 ///
@@ -72,6 +73,18 @@ public final class DBusMessage {
                                                                  iface,
                                                                  method) else {
             throw RuntimeError.generic("dbus_message_new_method_call() failed")
+        }
+
+        self.internalPointer = internalPointer
+    }
+
+    /// Constructs a new message to send a signal
+    ///
+    /// - Note: Path, interface, and method name can't contain any invalid characters (see the D-Bus specification).
+    public init(path: String, iface: String?, name: String) throws {
+        // Returns NULL if memory can't be allocated for the message.
+        guard let internalPointer = dbus_message_new_signal(path, iface, name) else {
+            throw RuntimeError.generic("dbus_message_new_signal() failed")
         }
 
         self.internalPointer = internalPointer
@@ -377,6 +390,19 @@ public final class DBusMessage {
         }
     }
 }
+
+extension DBusMessage: CustomStringConvertible {
+    public var description: String {
+        do {
+            let decoder = DBusDecoder()
+            let decoded = try decoder.decode(AnyDecodable.self, from: self)
+            return "DBusMessage: \(decoded)"
+        } catch {
+            return "DBusMessage: \(error)"
+        }
+    }
+}
+
 
 // MARK: - Copying
 

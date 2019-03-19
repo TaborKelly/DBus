@@ -12,15 +12,32 @@ import AnyCodable
 import HeliumLogger
 import LoggerAPI
 
-func echoS(message: DBusMessage) -> DBusMessage? {
-    Log.debug("message: \(message)")
+let signalSem = DispatchSemaphore(value: 0)
+var signalValue = ""
+func signalS(message: DBusMessage) {
+    Log.entry("message: \(message)")
+
+    let decoder = DBusDecoder()
+    signalValue = try! decoder.decode(String.self, from: message)
+
+    signalSem.signal()
+}
+
+func echoS(message: DBusMessage, connection: DBusConnection) -> DBusMessage? {
+    Log.entry("message: \(message)")
 
     do {
         let decoder = DBusDecoder()
         let decoded = try decoder.decode(String.self, from: message)
 
-        let reply = try DBusMessage(replyTo: message)
+        // Send a signal
+        let signal = try! DBusMessage(path: "/Foo/Bar", iface: "Bar.Foo", name: "signalS")
         let encoder = DBusEncoder()
+        try encoder.encode(decoded, to: signal, signature: "s")
+        try! connection.send(message: signal)
+
+        // Send a reply
+        let reply = try DBusMessage(replyTo: message)
         try encoder.encode(decoded, to: reply, signature: "s")
         return reply
     } catch {
@@ -50,6 +67,10 @@ final class RoundTripTests: XCTestCase {
             try manager.connection.requestName("Bar.Foo")
             let adaptor = try Adaptor(connection: manager.connection, objectPath: "/Foo/Bar")
             adaptor.addMethod(interfaceName: "Bar.Foo", memberName: "echoS", fn: echoS)
+            let sf = SignalFilter(interface: "Bar.Foo",
+                                  signalName: "signalS",
+                                  fn: signalS)
+            try manager.filter.addFilter(sf)
 
             let message = try DBusMessage(destination: "Bar.Foo",
                                           path: "/Foo/Bar",
@@ -61,12 +82,14 @@ final class RoundTripTests: XCTestCase {
             guard let r = try manager.connection.sendWithReply(message: message) else {
                 throw RuntimeError.generic("No reply!")
             }
-            manager.connection.flush()
             RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
             XCTAssertTrue(r.completed)
             guard let reply = r.replyMessage else {
                 throw RuntimeError.generic("No reply!")
             }
+
+            signalSem.wait()
+            XCTAssertEqual(helloWorld, signalValue)
 
             let decoder = DBusDecoder()
             let decoded = try decoder.decode(String.self, from: reply)

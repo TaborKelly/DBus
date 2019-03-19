@@ -13,18 +13,19 @@ HeliumLogger.use(.debug) // For even more debug replace .debug with .entry
 ## Type Notes
 - DBus does not support nil values. If we encounter one in a keyed container (probably an `a{sv}`) we will simply ignore it. If we encounter it in any other context we throw an error.
 - DBus does not support Floats, but it does support Doubles. Floats will automatically be converted to Doubles when encoding.
-- All nested types in variants will be encoded as variants, because the alternative is untenable.
+- All complex types in variants will be encoded as variants, because the alternative is untenable.
 - DBus does not support Signed 8 bit integers, so they are encoded as unsigned integers in the event that they appear in a variant.
 
 ## TODO:
 - Better documentation
 - Revisit serial numbers
-- Server side support.
+- Revisit code cleanup. We probably have some code and types that we don't really need.
 - Better test harness.
 - Revisit file handles (`UNIX_FD h (104)`). The [DBus specification](https://dbus.freedesktop.org/doc/dbus-specification.html) says that they are unsigned 32 bit integers, but libdbus treats them as signed 32 bit integers, which would seem to make more sense.
 - Test on 32 bit platforms.
 - Remove remaining print()s.
 - Check for memory leaks
+- Consider removing all debug logging from the Codable code, they make a lot of method calls.
 
 ## Source code organization
 - `DBus` - things that don't fit in a more specific subdirectory. Mostly higher level abstractions.

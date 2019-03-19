@@ -22,7 +22,7 @@ public final class DBusPendingCall {
 
     // MARK: - Private Properties
     
-    private var replyMessageCache: DBusMessage?
+    private var replyMessageCache: DBusMessage? // TODO: revisit, can we get rid of this?
 
     // MARK: - Initialization
 
@@ -77,7 +77,10 @@ public final class DBusPendingCall {
         // return cached message
         guard replyMessageCache == nil else { return replyMessageCache }
 
-        // attempt to get reply message
+        // attempt to get reply message only if we have one, otherwise libdbus will crash.
+        if self.completed == false {
+            return nil
+        }
 
         guard let messageInternalPointer = dbus_pending_call_steal_reply(internalPointer)
             else { return nil }

@@ -128,21 +128,31 @@ extension _DBusDecoder: Decoder {
     func singleValueContainer() throws -> SingleValueDecodingContainer {
         Log.entry("")
 
-        guard let container = self.container as? DBusSingleValueContainer else {
-            let debugDescription = "Cannot get single value decoding container."
-            let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
-            throw DecodingError.valueNotFound(DBusSingleValueContainer.self, context)
-        }
+        // The simple case where self.container is a DBusSingleValueContainer
+        if let container = self.container as? DBusSingleValueContainer {
+            guard let storage = container.storage else {
+                let debugDescription = "Cannot get single value decoding container: storage nil!"
+                let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+                throw DecodingError.valueNotFound(DBusSingleValueContainer.self, context)
+            }
 
-        guard let storage = container.storage else {
-            let debugDescription = "Cannot get single value decoding container: storage nil!"
-            let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
-            throw DecodingError.valueNotFound(DBusSingleValueContainer.self, context)
-        }
+            return _DBusDecoder.SingleValueContainer(codingPath: container.codingPath,
+                                                     userInfo: container.userInfo,
+                                                     storage: storage)
+        // The complex case where we are decoding a complex value (like a Map) into a single value.
+        } else {
+            guard let container = self.container else {
+                // This should never happen
+                let debugDescription = "self.container was nil!"
+                let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+                throw DecodingError.valueNotFound(DBusSingleValueContainer.self, context)
+            }
 
-        return _DBusDecoder.SingleValueContainer(codingPath: container.codingPath,
-                                                 userInfo: container.userInfo,
-                                                 storage: storage)
+            let storage = SingleValueDecoderStorage.container(container)
+            return _DBusDecoder.SingleValueContainer(codingPath: container.codingPath,
+                                                     userInfo: container.userInfo,
+                                                     storage: storage)
+        }
     }
 }
 

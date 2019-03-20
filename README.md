@@ -27,7 +27,7 @@ HeliumLogger.use(.debug) // For even more debug replace .debug with .entry
 - Consider removing all debug logging from the Codable code, they make a lot of method calls.
 - Server side DBus property support.
 - DBusManager: support system bus.
-- Investigate printing `DBusMessage`s - sometimes the decoding fails.
+- More graceful handling if you try to decode an empty message?
 
 ## Source code organization
 - `DBus` - things that don't fit in a more specific subdirectory. Mostly higher level abstractions.

@@ -8,6 +8,7 @@
 import Foundation
 import XCTest
 import DBus
+import AnyCodable
 import HeliumLogger
 import LoggerAPI
 
@@ -39,6 +40,7 @@ final class CodableTests: XCTestCase {
         ("testMap", testMap),
         ("testV", testV),
         ("testComplexMap", testComplexMap),
+        ("testAnyDecodable", testAnyDecodable),
     ]
 
     // BYTE y (121)
@@ -302,6 +304,17 @@ final class CodableTests: XCTestCase {
             try encoder.encode(Airport.example, to: dbusMessage, signature: "a{sv}")
             let decoded = try decoder.decode(Airport.self, from: dbusMessage)
             XCTAssert(Airport.example == decoded)
+        } catch {
+            XCTFail("\(error)")
+        }
+    }
+
+    func testAnyDecodable() {
+        do {
+            let dbusMessage = try DBusMessage(type: .methodCall) // type doesn't really matter
+            try encoder.encode(Airport.example, to: dbusMessage, signature: "a{sv}")
+            // This should not throw
+            let decoded = try decoder.decode(AnyDecodable.self, from: dbusMessage)
         } catch {
             XCTFail("\(error)")
         }

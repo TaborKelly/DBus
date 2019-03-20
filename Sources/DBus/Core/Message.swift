@@ -398,7 +398,7 @@ extension DBusMessage: CustomStringConvertible {
             let decoded = try decoder.decode(AnyDecodable.self, from: self)
             return "DBusMessage: \(decoded)"
         } catch {
-            return "DBusMessage: \(error)"
+            return "DBusMessage: empty"
         }
     }
 }

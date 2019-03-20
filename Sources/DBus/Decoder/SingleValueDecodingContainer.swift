@@ -1,6 +1,11 @@
 import Foundation
 import LoggerAPI
 
+enum SingleValueDecoderStorage {
+    case basicValue(DBusBasicValue)
+    case container(DBusDecodingContainer)
+}
+
 //
 // This is where the code lives to actually decode the DBus message.
 //
@@ -9,7 +14,7 @@ extension _DBusDecoder {
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
         let msgIter: DBusMessageIter
-        var storage: DBusBasicValue? = nil
+        var storage: SingleValueDecoderStorage? = nil
 
         init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], msgIter: DBusMessageIter) {
             Log.entry("")
@@ -25,7 +30,7 @@ extension _DBusDecoder {
             switch t {
             case .byte, .boolean, .int16, .uint16, .int32, .uint32, .int64, .uint64, .double, .fileDescriptor,
                  .string, .objectPath, .signature:
-                storage = try msgIter.getBasic()
+                storage = .basicValue(try msgIter.getBasic())
             default:
                 throw RuntimeError.logicError("Unhandeled case in _DBusDecoder.SingleValueContainer.dbusDecode()")
             }
@@ -40,9 +45,9 @@ extension _DBusDecoder {
     final class SingleValueContainer: SingleValueDecodingContainer {
         var codingPath: [CodingKey]
         var userInfo: [CodingUserInfoKey: Any]
-        var storage: DBusBasicValue
+        var storage: SingleValueDecoderStorage
 
-        init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], storage: DBusBasicValue) {
+        init(codingPath: [CodingKey], userInfo: [CodingUserInfoKey : Any], storage: SingleValueDecoderStorage) {
             Log.entry("")
 
             self.codingPath = codingPath
@@ -50,10 +55,18 @@ extension _DBusDecoder {
             self.storage = storage
         }
 
+        func getBasicValue() throws -> DBusBasicValue {
+            guard case let .basicValue(basicValue) = self.storage else {
+                let debugDescription = "_DBusDecoder.SingleValueContainer.getBasicValue(): self.storage is not a basic type"
+                let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+                throw DecodingError.typeMismatch(Any.self, context)
+            }
+
+            return basicValue
+        }
+
         func decodeNil() -> Bool {
             Log.entry("")
-
-            Log.error("DBus can not represent nil")
 
             return false
         }
@@ -61,7 +74,7 @@ extension _DBusDecoder {
         func decode(_ type: Bool.Type) throws -> Bool {
             Log.entry("")
 
-            switch storage {
+            switch try getBasicValue() {
             case .boolean(let v):
                 return v
 
@@ -75,7 +88,7 @@ extension _DBusDecoder {
         func decode(_ type: String.Type) throws -> String {
             Log.entry("")
 
-            switch storage {
+            switch try getBasicValue() {
             case .string(let v), .objectPath(let v), .signature(let v):
                 return v
             default:
@@ -88,7 +101,7 @@ extension _DBusDecoder {
         func decode(_ type: Double.Type) throws -> Double {
             Log.entry("")
 
-            switch storage {
+            switch try getBasicValue() {
             case .double(let v):
                 return v
 
@@ -102,7 +115,7 @@ extension _DBusDecoder {
         func decode(_ type: Float.Type) throws -> Float {
             Log.entry("")
 
-            switch storage {
+            switch try getBasicValue() {
             case .double(let v):
                 return Float(v)
 
@@ -117,7 +130,7 @@ extension _DBusDecoder {
             Log.entry("")
 
             var t: T?
-            switch storage {
+            switch try getBasicValue() {
             case .byte(let v):
                 t = T(exactly: v)
             case .int16(let v):
@@ -153,10 +166,16 @@ extension _DBusDecoder {
         func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
             Log.entry("")
 
-            var debugDescription = "_DBusDecoder.SingleValueContainer.decode(): _DBusDecoder.SingleValueContainer doesn't "
-            debugDescription += "know about this type."
-            let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
-            throw DecodingError.typeMismatch(Double.self, context)
+            guard case let .container(container) = self.storage else {
+                let debugDescription = "_DBusDecoder.SingleValueContainer.dbusDecode(): self.storage is not a container type"
+                let context = DecodingError.Context(codingPath: self.codingPath, debugDescription: debugDescription)
+                throw DecodingError.typeMismatch(T.self, context)
+            }
+
+            let decoder = _DBusDecoder(userInfo: userInfo, decodingContainer: container)
+            let value = try T(from: decoder)
+
+            return value
         }
     }
 }

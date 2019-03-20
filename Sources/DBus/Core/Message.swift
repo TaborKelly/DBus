@@ -228,18 +228,18 @@ public final class DBusMessage {
     /// or a well-known name specified in advance.
     ///
     /// The destination name must contain only valid characters as defined in the D-Bus specification.
-    public var destination: DBusBusName? {
+    public var destination: String? {
 
         guard let string = getString(dbus_message_get_destination)
             else { return nil }
 
-        return DBusBusName(string)
+        return string
     }
 
     /// Sets the message's destination.
-    public func setDestination(_ newValue: DBusBusName?) throws {
+    public func setDestination(_ newValue: String?) throws {
 
-        try setString(dbus_message_set_destination, newValue?.rawValue)
+        try setString(dbus_message_set_destination, newValue)
     }
 
     /// The name of the error (for `Error` message type).
@@ -344,12 +344,12 @@ public final class DBusMessage {
     /// - Note: Usually you don't want to call this.
     /// The message bus daemon will call it to set the origin of each message.
     /// If you aren't implementing a message bus daemon you shouldn't need to set the sender.
-    public var sender: DBusBusName? {
+    public var sender: String? {
 
         guard let string = getString(dbus_message_get_sender)
             else { return nil }
 
-        return DBusBusName(string)
+        return string
     }
 
     /// Sets the message sender.
@@ -359,9 +359,9 @@ public final class DBusMessage {
     /// - Note: Usually you don't want to call this.
     /// The message bus daemon will call it to set the origin of each message.
     /// If you aren't implementing a message bus daemon you shouldn't need to set the sender.
-    public func setSender(_ newValue: DBusBusName?) throws {
+    public func setSender(_ newValue: String?) throws {
 
-        try setString(dbus_message_set_sender, newValue?.rawValue)
+        try setString(dbus_message_set_sender, newValue)
     }
 
     // MARK: - Private Methods

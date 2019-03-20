@@ -310,15 +310,12 @@ public final class DBusMessage {
     /// The interface member being invoked (for method call type) or emitted (for signal type).
     ///
     /// The member name must contain only valid characters as defined in the D-Bus specification.
-    public var member: DBusMember? {
+    public var member: String? {
 
         guard let string = getString(dbus_message_get_member)
             else { return nil }
 
-        guard let member = DBusMember(rawValue: string)
-            else { fatalError("Invalid member \(string)") }
-
-        return member
+        return string
     }
 
     func getMember() -> String {
@@ -329,9 +326,9 @@ public final class DBusMessage {
     /// or emitted (`DBusMessageType.Signal`).
     ///
     /// The member name must contain only valid characters as defined in the D-Bus specification.
-    public func setMember(_ newValue: DBusMember?) throws {
+    public func setMember(_ newValue: String?) throws {
 
-        try setString(dbus_message_set_member, newValue?.rawValue)
+        try setString(dbus_message_set_member, newValue)
     }
 
     /// The message sender.

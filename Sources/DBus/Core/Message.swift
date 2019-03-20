@@ -333,16 +333,27 @@ public final class DBusMessage {
 
 extension DBusMessage: CustomStringConvertible {
     public var description: String {
+        if self.isEmpty {
+            return "DBusMessage: empty"
+        }
         do {
+
             let decoder = DBusDecoder()
             let decoded = try decoder.decode(AnyDecodable.self, from: self)
             return "DBusMessage: \(decoded)"
         } catch {
-            return "DBusMessage: empty"
+            return "DBusMessage: ERROR \(error)"
         }
     }
 }
 
+public extension DBusMessage {
+    /// Is this DBusMessage empty? This is the same as having a signture of `""`.
+    public var isEmpty: Bool {
+        let iter = DBusMessageIter(iterating: self)
+        return (iter.getSignature() == "")
+    }
+}
 
 // MARK: - Copying
 

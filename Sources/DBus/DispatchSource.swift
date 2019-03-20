@@ -42,7 +42,7 @@ private func dispatchStatusFunction(connection: OpaquePointer?, new_status: CDBu
 
 // This is not the Foundation DispatchSource. This has no analog in libdbus.
 // It exists to bridge libdbus land to Swift land.
-public class DBusDispatchSource {
+class DBusDispatchSource {
     private let connection: DBusConnection
     private var dispatchStatus: DBusDispatchStatus
     private let readerSource: DispatchSourceRead
@@ -50,7 +50,7 @@ public class DBusDispatchSource {
     private let PIPE_WRITE = 1
     private var pipeFds: [Int32] = [-1, -1]
 
-    public init(connection: DBusConnection, dispatchQueue: DispatchQueue) throws {
+    init(connection: DBusConnection, dispatchQueue: DispatchQueue) throws {
         Log.entry("")
         self.connection = connection
         let c_dispatchStatus = dbus_connection_get_dispatch_status(connection.internalPointer)

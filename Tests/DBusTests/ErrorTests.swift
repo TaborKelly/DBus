@@ -3,7 +3,6 @@
 //  DBus
 //
 //  Created by Tabor Kelly on 1/28/19.
-//  Copyright © 2019 PureSwift. All rights reserved.
 //
 
 import Foundation
@@ -25,7 +24,6 @@ final class ErrorTests: XCTestCase {
             print("\(message), \(e.message)")
             XCTAssertEqual(name, e.name)
             XCTAssertEqual(message, e.message)
-            // let r = e.Reference()
         } catch {
             XCTFail("\(error)")
         }

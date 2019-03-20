@@ -11,12 +11,12 @@ import CDBus
 import LoggerAPI
 
 // It exists to bridge libdbus land to Swift land.
-public class DBusTimeoutSource {
+class DBusTimeoutSource {
     var enabled = false // DispatchSourceTimer is very fragile
     let timerSource: DispatchSourceTimer
     let timeout: OpaquePointer?
 
-    public init(dispatchQueue: DispatchQueue, timeout: OpaquePointer?) {
+    init(dispatchQueue: DispatchQueue, timeout: OpaquePointer?) {
         Log.entry("")
 
         self.timeout = timeout

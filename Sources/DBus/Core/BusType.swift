@@ -3,7 +3,6 @@
 //  DBus
 //
 //  Created by Alsey Coleman Miller on 2/26/16.
-//  Copyright © 2016 PureSwift. All rights reserved.
 //
 
 /// Well-known D-Bus bus types.

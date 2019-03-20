@@ -3,7 +3,6 @@
 //  DBus
 //
 //  Created by Alsey Coleman Miller on 2/25/16.
-//  Copyright © 2016 PureSwift. All rights reserved.
 //
 
 import CDBus
@@ -421,45 +420,6 @@ public extension DBusMessage {
         return copyMessage
     }
 }
-
-// MARK: - Sequence
-
-/*
-extension DBusMessage: Sequence {
-
-    public typealias Element = DBusMessageArgument
-
-    public func makeIterator() -> Iterator {
-
-        return Iterator(self)
-    }
-}
- */
-/*
-public extension DBusMessage {
-
-    /// DBus Message Iterator
-    public struct Iterator: IteratorProtocol {
-
-        public typealias Element = DBusMessageArgument
-
-        /// Internal libdbus iterator
-        internal private(set) var internalValue: DBusMessageIter
-
-        /// Intialize for iterating the specifed message.
-        internal init(_ message: DBusMessage) {
-
-            // Message doesnt need to be retained becuase this should only be called while the message is still >= 1 ARC.
-            self.internalValue = DBusMessageIter(iterating: message)
-        }
-
-        public mutating func next() -> DBusMessageArgument? {
-
-            return internalValue.next()
-        }
-    }
-}
-*/
 
 // MARK: - Supporting Types
 

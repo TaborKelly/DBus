@@ -11,13 +11,13 @@ import CDBus
 import LoggerAPI
 
 // It exists to bridge libdbus land to Swift land.
-public class DBusWatchSource {
+class DBusWatchSource {
     var enabled = true // DispatchSourceRead/Write are very fragile
     let readerSource: DispatchSourceRead?
     let writerSource: DispatchSourceWrite?
     let watch: OpaquePointer?
 
-    public init(dispatchQueue: DispatchQueue, watch: OpaquePointer?) {
+    init(dispatchQueue: DispatchQueue, watch: OpaquePointer?) {
         Log.entry("")
 
         // libdbus is a little funky about watches. It will create one for reading and a seperate one for writing

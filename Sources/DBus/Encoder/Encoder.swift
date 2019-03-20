@@ -11,6 +11,7 @@ import LoggerAPI
        message right before we return. We could probably cut down on our error handling that way?
  */
 final public class DBusEncoder {
+    /// Construct the DBusEncoder, nothing fancy.
     public init() {
         Log.entry("")
     }
@@ -19,22 +20,18 @@ final public class DBusEncoder {
         Log.entry("")
     }
 
-    /**
-     A dictionary you use to customize the encoding process
-     by providing contextual information.
-     */
+    /// A dictionary you use to customize the encoding process by providing contextual information.
     public var userInfo: [CodingUserInfoKey : Any] = [:]
 
     /**
      Returns a DBus-encoded representation of the value you supply.
 
      - Parameters:
-        - value: The value to encode as DBus.
-     - Throws: `EncodingError.invalidValue(_:_:)`
-                if the value can't be encoded as a DBus object.
+          - value: The value to encode as DBus.
+     - Throws: `EncodingError.invalidValue(_:_:)` if the value can't be encoded as a DBus object.
      */
     public func encode(_ value: Encodable,
-                       to: DBusMessage, // TODO: revisit, nameing
+                       to: DBusMessage, // TODO: revisit, nameing?
                        signature: String) throws {
         Log.entry("")
 

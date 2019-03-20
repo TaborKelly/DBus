@@ -3,7 +3,6 @@
 //  DBus
 //
 //  Created by Alsey Coleman Miller on 2/25/16.
-//  Copyright © 2016 PureSwift. All rights reserved.
 //
 
 import CDBus

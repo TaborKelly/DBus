@@ -7,19 +7,15 @@ import LoggerAPI
 final public class DBusDecoder {
     public init() {}
 
-    /**
-     A dictionary you use to customize the decoding process
-     by providing contextual information.
-     */
+    /// A dictionary you use to customize the decoding process by providing contextual information.
     public var userInfo: [CodingUserInfoKey : Any] = [:]
 
     /**
-     Returns a value of the type you specify,
-     decoded from a DBusMessage.
+     Returns a value of the type you specify, decoded from a DBusMessage.
 
      - Parameters:
-        - type: The type of the value to decode from the suppliedDBus object.
-        - from: The DBusMessage to decode.
+          - type: The type of the value to decode from the suppliedDBus object.
+          - from: The DBusMessage to decode.
      - Throws: An appropriate DecodingError
      */
     public func decode<T>(_ type: T.Type, from message: DBusMessage) throws -> T where T : Decodable {
@@ -30,14 +26,12 @@ final public class DBusDecoder {
     }
 
     /**
-     Returns a value of the type you specify,
-     decoded from a DBusMessageIter.
+     Returns a value of the type you specify, decoded from a DBusMessageIter.
 
      - Parameters:
-     - type: The type of the value to decode from the supplied DBusMessageIter.
-     - from: The DBusMessageIter to decode from.
-     - Throws: An appropriate DecodingError
-     if the data is not validDBus.
+         - type: The type of the value to decode from the supplied DBusMessageIter.
+         - from: The DBusMessageIter to decode from.
+     - Throws: An appropriate DecodingError if the data is not valid DBus.
      */
     public func decode<T>(_ type: T.Type, from messageIter: DBusMessageIter) throws -> T where T : Decodable {
         Log.entry("")

@@ -266,15 +266,12 @@ public final class DBusMessage {
     /// or the interface a signal is being emitted from (for signal call type).
     ///
     /// The interface name must contain only valid characters as defined in the D-Bus specification.
-    public var interface: DBusInterface? {
+    public var interface: String? {
 
         guard let string = getString(dbus_message_get_interface)
             else { return nil }
 
-        guard let interface = DBusInterface(rawValue: string)
-            else { fatalError("Invalid interface \(string)") }
-
-        return interface
+        return string
     }
 
     public func getInterface() -> String {
@@ -283,9 +280,9 @@ public final class DBusMessage {
 
     /// Sets the interface this message is being sent to (for `DBusMessageType.MethodCall`)
     /// or the interface a signal is being emitted from (for `DBusMessageType.Signal`).
-    public func setInterface(_ newValue: DBusInterface?) throws {
+    public func setInterface(_ newValue: String?) throws {
 
-        try setString(dbus_message_set_interface, newValue?.rawValue)
+        try setString(dbus_message_set_interface, newValue)
     }
 
     /// The object path this message is being sent to (for method call type)

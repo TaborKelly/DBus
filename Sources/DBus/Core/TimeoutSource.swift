@@ -3,12 +3,12 @@
 //  DBus
 //
 //  Created by Tabor Kelly on 2/27/19.
-//  Copyright © 2019 Racepoint Energy LLC.
 //  All rights reserved.
 //
 
 import Foundation
 import CDBus
+import LoggerAPI
 
 // It exists to bridge libdbus land to Swift land.
 public class DBusTimeoutSource {
@@ -17,7 +17,7 @@ public class DBusTimeoutSource {
     let timeout: OpaquePointer?
 
     public init(dispatchQueue: DispatchQueue, timeout: OpaquePointer?) {
-        print("DBusTimeoutSource.init()")
+        Log.entry("")
 
         self.timeout = timeout
         timerSource = DispatchSource.makeTimerSource(queue: dispatchQueue)
@@ -39,7 +39,7 @@ public class DBusTimeoutSource {
     }
 
     func toggle() {
-        print("DBusTimeoutSource.toggle(\(String(describing: timeout)))")
+        Log.entry("\(String(describing: timeout))")
 
         if dbus_timeout_get_enabled(timeout) == 0 {
             disable()
@@ -49,7 +49,7 @@ public class DBusTimeoutSource {
     }
 
     private func enable() {
-        print("DBusTimeoutSource.enable(\(String(describing: timeout)))")
+        Log.entry("\(String(describing: timeout))")
 
         if enabled == false {
             let intervalMilliseconds = dbus_timeout_get_interval(timeout)
@@ -64,7 +64,7 @@ public class DBusTimeoutSource {
     }
 
     private func disable() {
-        print("DBusTimeoutSource.disable(\(String(describing: timeout)))")
+        Log.entry("\(String(describing: timeout))")
         if enabled == true {
             timerSource.suspend()
             enabled = false
@@ -72,11 +72,11 @@ public class DBusTimeoutSource {
     }
 
     private func fire() {
-        print("DBusTimeoutSource.fire(\(String(describing: timeout)))")
+        Log.entry("\(String(describing: timeout))")
 
         let b = dbus_timeout_handle(timeout)
         if b == 0 {
-            print("DBusTimeoutSource.fire(): dbus_timeout_handle() returned FALSE")
+            Log.error("dbus_timeout_handle() returned FALSE")
         }
     }
 }

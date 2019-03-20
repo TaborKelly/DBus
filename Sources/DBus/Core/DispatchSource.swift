@@ -3,12 +3,12 @@
 //  DBus
 //
 //  Created by Tabor Kelly on 2/26/19.
-//  Copyright © 2019 Racepoint Energy LLC.
 //  All rights reserved.
 //
 
 import Foundation
 import CDBus
+import LoggerAPI
 
 // This gets called back from C land in libdbus.
 // As per the documentation:
@@ -21,16 +21,16 @@ import CDBus
 // So, we we write the status to a pipe that we read once we are out of the callback context
 private func dispatchStatusFunction(connection: OpaquePointer?, new_status: CDBus.DBusDispatchStatus,
                                     data: UnsafeMutableRawPointer?) {
-    print("dispatchStatusFunction(\(String(describing: connection)), \(new_status), \(String(describing: data)))")
+    Log.entry("(\(String(describing: connection)), \(new_status), \(String(describing: data)))")
 
     guard let p = data else {
         // This should never happen
-        print("ERROR: dispatchStatusFunction() got a nil data!")
+        Log.error("got a nil data!")
         return
     }
 
     guard let newStatus = DBusDispatchStatus.init(rawValue: new_status.rawValue) else {
-        print("dispatchStatusFunction(): ERROR Unknown DBusDispatchStatus: \(new_status)")
+        Log.error("Unknown DBusDispatchStatus: \(new_status)")
         return
     }
 
@@ -51,7 +51,7 @@ public class DBusDispatchSource {
     private var pipeFds: [Int32] = [-1, -1]
 
     public init(connection: DBusConnection, dispatchQueue: DispatchQueue) throws {
-        print("DBusDispatchSource.init()")
+        Log.entry("")
         self.connection = connection
         let c_dispatchStatus = dbus_connection_get_dispatch_status(connection.internalPointer)
         guard let d = DBusDispatchStatus.init(rawValue: c_dispatchStatus.rawValue) else {
@@ -60,7 +60,6 @@ public class DBusDispatchSource {
         dispatchStatus = d
 
         let r = pipe(&pipeFds)
-        print("\(r), \(pipeFds[PIPE_READ]), \(pipeFds[PIPE_WRITE])")
         if r != 0 {
             throw RuntimeError.generic("DispatchSource(): pipe() failed")
         }
@@ -77,7 +76,7 @@ public class DBusDispatchSource {
     }
 
     func dispatchStatus(newStatus: DBusDispatchStatus) {
-        print("DBusDispatchSource.dispatchStatus(\(newStatus))")
+        Log.entry("\(newStatus)")
         dispatchStatus = newStatus
 
         // if libdbus that we have data remaining to read, then write to our end of the pipe
@@ -90,7 +89,7 @@ public class DBusDispatchSource {
     }
 
     private func handleRead() {
-        print("DBusDispatchSource.handleRead()")
+        Log.entry("")
 
         // Swift does not make this easy
         let buffer: UnsafeMutablePointer<UInt32> = UnsafeMutablePointer.allocate(capacity: 1)
@@ -98,12 +97,11 @@ public class DBusDispatchSource {
 
         var c_DispatchStatus = DBUS_DISPATCH_DATA_REMAINS // our starting value doesn't matter
         repeat {
-            print("dbus_connection_dispatch()")
             c_DispatchStatus = dbus_connection_dispatch(connection.internalPointer);
         } while (c_DispatchStatus == DBUS_DISPATCH_DATA_REMAINS)
     }
 
     private func handleReadCancel() {
-        print("DBusDispatchSource.handleReadCancel()")
+        Log.entry("")
     }
 }

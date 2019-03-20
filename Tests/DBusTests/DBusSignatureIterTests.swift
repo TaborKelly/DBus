@@ -4,7 +4,6 @@
 //  DBus
 //
 //  Created by Tabor Kelly on 3/7/19.
-//  Copyright © 2019 Racepoint Energy LLC. All rights reserved.
 //
 
 import Foundation

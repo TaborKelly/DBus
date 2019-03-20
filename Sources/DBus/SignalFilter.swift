@@ -3,58 +3,52 @@
 //  DBus
 //
 //  Created by Tabor Kelly on 3/1/19.
-//  Copyright © 2019 Racepoint Energy LLC.
 //  All rights reserved.
 //
 
 import Foundation
 import CDBus
+import LoggerAPI
 
-public struct SignalFilter {
-    let interface: String
-    let signalName: String
-    // This will run on the DBusManager dispatch queue. Don't block it, or you will block all of your DBus
-    // messages.
-    let fn: (DBusMessage) -> ()
-
-    public init(interface: String, signalName: String, fn: @escaping (DBusMessage) -> ()) {
-        self.interface = interface
-        self.signalName = signalName
-        self.fn = fn
-    }
-}
+/**
+ This is how the `DBusSignalFilter` will call you back with messages. The `DBusMessage` is the signal from the server.
+ You will be called on the `DBusManager` dispatch queue, so don't block.
+ */
+public typealias SignalCall = (DBusMessage) -> ()
 
 private func handleMessageFunction(connection: OpaquePointer?, // DBusConnection *connection
                                    message: OpaquePointer?, // DBusMessage *message
                                    data: UnsafeMutableRawPointer?) -> CDBus.DBusHandlerResult {
-    print("handleMessageFunction()")
+    Log.entry("")
 
     guard let p = data else {
         // This should never happen
-        print("ERROR: handleMessageFunction() got a nil data!")
+        Log.error("got a nil data!")
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED
     }
 
     guard let m = message else {
         // This should never happen
-        print("ERROR: handleMessageFunction() got a nil message!")
+        Log.error("got a nil message!")
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED
     }
 
     let message = DBusMessage(m)
 
     // Extract pointer to 'DBusFilter' from void pointer:
-    let filter = Unmanaged<DBusFilter>.fromOpaque(p).takeUnretainedValue()
+    let filter = Unmanaged<DBusSignalFilter>.fromOpaque(p).takeUnretainedValue()
     return filter.handleMessage(message: message)
 }
 
-// This exists to bridge libdbus land to Swift land, particularly for signals for the time being.
-public class DBusFilter {
-    let connection: DBusConnection
-    var filters: [SignalFilter] = []
+/**
+ A class that lets you listen for DBus signals. That is, recieve DBus signals when you are a client.
+ */
+public class DBusSignalFilter {
+    private let connection: DBusConnection
+    private var filters: [String: [String: SignalCall]] = [:]
 
     init(connection: DBusConnection) throws {
-        print("DBusFilter.init()")
+        Log.entry("")
 
         self.connection = connection
 
@@ -69,19 +63,24 @@ public class DBusFilter {
         }
     }
 
-    public func addFilter(_ sf: SignalFilter) throws {
+    func addFilter(interface: String, signal: String, fn: @escaping SignalCall) throws {
         let error = DBusError()
         dbus_bus_add_match(connection.internalPointer,
-                           "type='signal',interface='\(sf.interface)',member='\(sf.signalName)'",
+                           "type='signal',interface='\(interface)',member='\(signal)'",
                            &error.cError)
         if error.isSet {
             throw error
         }
-        filters.append(sf)
+        if var i = self.filters[interface] {
+            i[signal] = fn
+            self.filters[interface] = i
+        } else {
+            self.filters[interface] = [signal: fn]
+        }
     }
 
     func handleMessage(message: DBusMessage) -> CDBus.DBusHandlerResult {
-        print("DBusFilter.handleMessage(\(message))")
+        Log.entry("\(message)")
 
         // right now, we only care about signals, so short circuit for anything else
         let t = dbus_message_get_type(message.internalPointer)
@@ -89,17 +88,15 @@ public class DBusFilter {
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED
         }
 
-        // loop through all of our filters
-        for f in filters {
-            // if we find one that matches
-            let b = Bool(dbus_message_is_signal(message.internalPointer,
-                                                f.interface,
-                                                f.signalName))
-            if b == true {
-                // then call it
-                f.fn(message)
-            }
+        guard let i = self.filters[message.getInterface()] else {
+            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED
         }
+
+        guard let fn = i[message.getMember()] else {
+            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED
+        }
+
+        fn(message)
 
         return DBUS_HANDLER_RESULT_HANDLED // for our implementation, this seems right?
     }

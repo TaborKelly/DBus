@@ -3,19 +3,19 @@
 //  DBus
 //
 //  Created by Tabor Kelly on 2/26/19.
-//  Copyright © 2019 Racepoint Energy LLC.
 //  All rights reserved.
 //
 
 import Foundation
 import CDBus
+import LoggerAPI
 
 private func addWatchFunction(watch: OpaquePointer?, data: UnsafeMutableRawPointer?) -> dbus_bool_t {
-    print("addWatchFunction()")
+    Log.entry("")
 
     guard let p = data else {
         // This should never happen
-        print("ERROR: addWatchFunction() got a nil data!")
+        Log.error("got a nil data!")
         return 0 // TODO: Bool?
     }
 
@@ -25,11 +25,11 @@ private func addWatchFunction(watch: OpaquePointer?, data: UnsafeMutableRawPoint
 }
 
 private func removeWatchFunction(watch: OpaquePointer?, data: UnsafeMutableRawPointer?) {
-    print("removeWatchFunction()")
+    Log.entry("")
 
     guard let p = data else {
         // This should never happen
-        print("ERROR: addWatchFunction() got a nil data!")
+        Log.error("got a nil data!")
         return
     }
 
@@ -39,11 +39,11 @@ private func removeWatchFunction(watch: OpaquePointer?, data: UnsafeMutableRawPo
 }
 
 private func watchToggledFunction(watch: OpaquePointer?, data: UnsafeMutableRawPointer?) {
-    print("watchToggledFunction()")
+    Log.entry("")
 
     guard let p = data else {
         // This should never happen
-        print("ERROR: addWatchFunction() got a nil data!")
+        Log.error("got a nil data!")
         return
     }
 
@@ -54,11 +54,11 @@ private func watchToggledFunction(watch: OpaquePointer?, data: UnsafeMutableRawP
 
 // dbus_bool_t(* DBusAddTimeoutFunction) (DBusTimeout *timeout, void *data)
 private func addTimeoutFunction(timeout: OpaquePointer?, data: UnsafeMutableRawPointer?) -> dbus_bool_t {
-    print("addTimeoutFunction()")
+    Log.entry("")
 
     guard let p = data else {
         // This should never happen
-        print("ERROR: addTimeoutFunction() got a nil data!")
+        Log.error("got a nil data!")
         return 0
     }
 
@@ -68,11 +68,11 @@ private func addTimeoutFunction(timeout: OpaquePointer?, data: UnsafeMutableRawP
 }
 
 private func removeTimeoutFunction(timeout: OpaquePointer?, data: UnsafeMutableRawPointer?) {
-    print("removeTimeoutFunction()")
+    Log.entry("")
 
     guard let p = data else {
         // This should never happen
-        print("ERROR: removeTimeoutFunction() got a nil data!")
+        Log.error("got a nil data!")
         return
     }
 
@@ -82,11 +82,11 @@ private func removeTimeoutFunction(timeout: OpaquePointer?, data: UnsafeMutableR
 }
 
 private func timeoutToggledFunction(timeout: OpaquePointer?, data: UnsafeMutableRawPointer?) {
-    print("timeoutToggledFunction()")
+    Log.entry("")
 
     guard let p = data else {
         // This should never happen
-        print("ERROR: timeoutToggledFunction() got a nil data!")
+        Log.error("got a nil data!")
         return
     }
 
@@ -95,11 +95,18 @@ private func timeoutToggledFunction(timeout: OpaquePointer?, data: UnsafeMutable
     manager.timeoutToggled(timeout: timeout)
 }
 
-// This class has no analog in libdbus. It exists to integrate libdbus with the Swift Dispatch Queues.
+/**
+ * This class exists to make it easy for clients to interact with DBus. It has no analogy in libdbus, but includes
+ * things like event loop integration for Swift.
+ *
+ * TODO: add support for system bus.
+ */
 public final class DBusManager {
     private static var manager: DBusManager?
 
-    // Get the singleton manager object
+    /**
+     * Get the singleton DBusManager object. This may need to change when we add system bus support.
+     */
     public class func getManager() throws -> DBusManager {
         if manager == nil {
             try DispatchQueue.global().sync(flags: .barrier) {
@@ -112,21 +119,22 @@ public final class DBusManager {
         return manager!
     }
 
+    /// The DBus connection to send/receive messages on.
     public let connection: DBusConnection
     private let dispatchSource: DBusDispatchSource
     private let dispatchQueue: DispatchQueue
-    public let filter: DBusFilter
+    private let signalFilter: DBusSignalFilter
     private var watches: [UnsafeMutableRawPointer:DBusWatchSource] = [:]
     private var timeouts: [UnsafeMutableRawPointer:DBusTimeoutSource] = [:]
 
     private init() throws {
         // our only DispatchQueue
         // TODO: add system bus support
-        dispatchQueue = DispatchQueue(label: "com.racepointenergy.DBus.session", qos: .utility,
-                                      attributes: []) // serial, because that's all we want
-        connection = try DBusConnection(busType: .session)
-        filter = try DBusFilter(connection: connection)
-        dispatchSource = try DBusDispatchSource(connection: connection, dispatchQueue: dispatchQueue)
+        self.dispatchQueue = DispatchQueue(label: "com.racepointenergy.DBus.session", qos: .utility,
+                                           attributes: []) // serial, because that's all we want
+        self.connection = try DBusConnection(busType: .session)
+        self.signalFilter = try DBusSignalFilter(connection: connection)
+        self.dispatchSource = try DBusDispatchSource(connection: connection, dispatchQueue: dispatchQueue)
 
         // Grap an UnsafeMutableRawPointer to self so that we can pass it into C land
         let data = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
@@ -152,35 +160,69 @@ public final class DBusManager {
         }
     }
 
+    /**
+     Get a DBus property.
+
+     - Parameters:
+         - destination: The destination (probably a well known service name).
+         - objectPath: The object path.
+         - interface: The name of the DBus interface to query.
+         - property: The property name to query.
+     */
     public func getProperty(destination: String, objectPath: String,
-                            interfaceName: String, propertyName: String) throws -> DBusMessage? {
+                            interface: String, property: String) throws -> DBusMessage? {
         let message = try DBusMessage(destination: destination,
                                       path: objectPath,
                                       iface: "org.freedesktop.DBus.Properties",
                                       method: "Get")
-        try message.append(contentsOf: [.string(interfaceName), .string(propertyName)])
+        try message.append(contentsOf: [.string(interface), .string(property)])
 
         guard let r = try connection.sendWithReply(message: message) else {
-            print("DBusManager.sendWithReply() failed!")
-            exit(1)
+            throw RuntimeError.generic("DBusManager.sendWithReply() failed!")
         }
-        print("\(String(describing: r))")
         r.block()
 
         return r.replyMessage
     }
 
-    public func newAdaptor(objectPath: String) throws -> Adaptor {
-        return try Adaptor(connection: self.connection, objectPath: objectPath)
+    /**
+     Add a signal filter. This lets you get notified (acting as a client) when a server sends a signal.
+
+     - Parameters:
+         - interface: The name of the interface to listen for.
+         - signal: The name of the signal that you wish to be notified about.
+         - fn: The function to call when the signal occurs.
+     */
+    public func addSignalFilter(interface: String, signal: String, fn: @escaping SignalCall) throws {
+        // This should be thread safe.
+        try self.signalFilter.addFilter(interface: interface, signal: signal, fn: fn)
     }
 
+    /**
+     Create a new `DBusServerAdaptor` which will let you expose your Swift code so that it can be called over DBus.
+     That is, it lets you act as a DBus Server.
+
+     - Parameters:
+         - objectPath: The object path that the `DBusServerAdaptor` represents.
+     */
+    public func newServerAdaptor(objectPath: String) throws -> DBusServerAdaptor {
+        Log.entry("")
+
+        return try DBusServerAdaptor(connection: self.connection, dispatchQueue: self.dispatchQueue,
+                                     objectPath: objectPath)
+    }
+
+    //
+    // From here down are internal implementation details that normal users of the library should not care about.
+    //
+
     func addWatch(watch: OpaquePointer?) -> dbus_bool_t {
-        print("DBusManager.addWatch()")
+        Log.entry("")
 
         let w = DBusWatchSource(dispatchQueue: dispatchQueue, watch: watch)
         guard let p = dbus_watch_get_data(watch) else {
             // This should never happen
-            print("DBusManager.addWatch(): dbus_watch_get_data() failed!")
+            Log.error("dbus_watch_get_data() failed!")
             return 0
         }
         watches[p] = w
@@ -189,27 +231,27 @@ public final class DBusManager {
     }
 
     func removeWatch(watch: OpaquePointer?) {
-        print("DBusManager.removeWatch()")
+        Log.entry("")
 
         guard let p = dbus_watch_get_data(watch) else {
             // This should never happen
-            print("DBusManager.removeWatch(): dbus_watch_get_data() failed!")
+            Log.error("dbus_watch_get_data() failed!")
             return
         }
         watches[p] = nil
     }
 
     func watchToggled(watch: OpaquePointer?) {
-        print("DBusManager.watchToggled()")
+        Log.entry("")
 
         guard let p = dbus_watch_get_data(watch) else {
             // This should never happen
-            print("DBusManager.watchToggled(): dbus_watch_get_data() failed!")
+            Log.error("dbus_watch_get_data() failed!")
             return
         }
 
         guard let watchObject = watches[p] else {
-            print("DBusManager.watchToggled(): failed to find watch!")
+            Log.error("failed to find watch!")
             return
         }
 
@@ -217,12 +259,12 @@ public final class DBusManager {
     }
 
     func addTimeout(timeout: OpaquePointer?) -> dbus_bool_t {
-        print("addTimeout(\(String(describing: timeout)))")
+        Log.entry("\(String(describing: timeout))")
 
         let t = DBusTimeoutSource(dispatchQueue: dispatchQueue, timeout: timeout)
         guard let p = dbus_timeout_get_data(timeout) else {
             // This should never happen
-            print("DBusManager.addWatch(): dbus_timeout_get_data() failed!")
+            Log.error("dbus_timeout_get_data() failed!")
             return 0
         }
         timeouts[p] = t
@@ -231,16 +273,16 @@ public final class DBusManager {
     }
 
     func removeTimeout(timeout: OpaquePointer?) {
-        print("DBusManager.removeTimeout(\(String(describing: timeout)))")
+        Log.entry("\(String(describing: timeout))")
 
         guard let p = dbus_timeout_get_data(timeout) else {
             // This should never happen
-            print("DBusManager.removeTimeout(): dbus_timeout_get_data() failed!")
+            Log.error("dbus_timeout_get_data() failed!")
             return
         }
 
         guard let timeoutSource = timeouts[p] else {
-            print("DBusManager.removeTimeout(): failed to find timeout!")
+            Log.error("failed to find timeout!")
             return
         }
         timeoutSource.remove()
@@ -249,16 +291,16 @@ public final class DBusManager {
     }
 
     func timeoutToggled(timeout: OpaquePointer?) {
-        print("DBusManager.timeoutToggled(\(String(describing: timeout)))")
+        Log.entry("\(String(describing: timeout))")
 
         guard let p = dbus_timeout_get_data(timeout) else {
             // This should never happen
-            print("DBusManager.timeoutToggled(): dbus_timeout_get_data() failed!")
+            Log.error("dbus_timeout_get_data() failed!")
             return
         }
 
         guard let timeoutSource = timeouts[p] else {
-            print("DBusManager.timeoutToggled(): failed to find watch!")
+            Log.error("failed to find watch!")
             return
         }
 

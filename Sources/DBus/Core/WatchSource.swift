@@ -3,12 +3,12 @@
 //  DBus
 //
 //  Created by Tabor Kelly on 2/27/19.
-//  Copyright © 2019 Racepoint Energy LLC.
 //  All rights reserved.
 //
 
 import Foundation
 import CDBus
+import LoggerAPI
 
 // It exists to bridge libdbus land to Swift land.
 public class DBusWatchSource {
@@ -18,7 +18,7 @@ public class DBusWatchSource {
     let watch: OpaquePointer?
 
     public init(dispatchQueue: DispatchQueue, watch: OpaquePointer?) {
-        print("DBusWatchSource.init()")
+        Log.entry("")
 
         // libdbus is a little funky about watches. It will create one for reading and a seperate one for writing
         // per socket. Then it will toggle them independently, which almost makes sense. Almost.
@@ -55,7 +55,7 @@ public class DBusWatchSource {
     }
 
     func toggle() {
-        print("DBusWatchSource.toggle()")
+        Log.entry("")
 
         if dbus_watch_get_enabled(watch) == 0 {
             disable()
@@ -65,7 +65,7 @@ public class DBusWatchSource {
     }
 
     private func enable() {
-        print("DBusWatchSource.enable()")
+        Log.entry("")
 
         if enabled == false {
             readerSource?.resume()
@@ -75,7 +75,8 @@ public class DBusWatchSource {
     }
 
     private func disable() {
-        print("DBusWatchSource.disable()")
+        Log.entry("")
+
         if enabled == true {
             readerSource?.suspend()
             writerSource?.suspend()
@@ -84,21 +85,21 @@ public class DBusWatchSource {
     }
 
     private func handleRead() {
-        print("DBusWatchSource.handleRead()")
+        Log.entry("")
 
         let b = dbus_watch_handle(watch, DBUS_WATCH_READABLE.rawValue)
         if b == 0 {
-            print("DBusWatchSource.handleRead(): dbus_watch_handle() returned FALSE, disabling watch")
+            Log.error("dbus_watch_handle() returned FALSE, disabling watch")
             disable()
         }
     }
 
     private func handleWrite() {
-        print("DBusWatchSource.handleWrite()")
+        Log.entry("")
 
         let b = dbus_watch_handle(watch, DBUS_WATCH_WRITABLE.rawValue)
         if b == 0 {
-            print("DBusWatchSource.handleWrite(): dbus_watch_handle() returned FALSE, disabling watch")
+            Log.entry("dbus_watch_handle() returned FALSE, disabling watch")
             disable()
         }
     }

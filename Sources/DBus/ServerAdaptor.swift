@@ -27,33 +27,43 @@ private func objectPathMessageFunction(connection: OpaquePointer?, message: Opaq
     let message = DBusMessage(m)
 
     // Extract pointer to 'Adaptor' from void pointer:
-    let adaptor = Unmanaged<Adaptor>.fromOpaque(p).takeUnretainedValue()
+    let adaptor = Unmanaged<DBusServerAdaptor>.fromOpaque(p).takeUnretainedValue()
     return adaptor.objectPathMessage(message)
 }
 
 /**
- This is how the Adaptor will call you back with messages. The `DBusMessage` is the message from the client. The
- `DBusConnection` is passed as a convience in case you wish to use it to send a signal. If you return a `DBusMessage` it
- will be sent as a reply to the client. You will be called on the `DBusManager` dispatch queue, so don't block.
+ This is how the `DBusServerAdaptor` will call you back with messages. The `DBusMessage` is the message from the client.
+ The `DBusConnection` is passed as a convience in case you wish to use it to send a signal. If you return a
+ `DBusMessage` it will be sent as a reply to the client. You will be called on the `DBusManager` dispatch queue, so
+ don't block.
  */
 public typealias AdaptorCall = (DBusMessage, DBusConnection) -> (DBusMessage?)
 
 /**
- This Adaptor lets you expose your Swift code so that it can be called over DBus. That is, it lets you act as a DBus
- Server. Named adaptor vs adapter to match Qt as well as the sometimes used style that an adapter is a person and an
- adaptor is a thing.
+ This ServerAdaptor lets you expose your Swift code so that it can be called over DBus. That is, it lets you act as a
+ DBus Server. Named adaptor vs adapter to match Qt as well as the sometimes used style that an adapter is a person and
+ an adaptor is a thing.
  */
-public class Adaptor {
+public class DBusServerAdaptor {
     private var connection: DBusConnection
+    private var dispatchQueue: DispatchQueue
     // The outermost String is the name of the interface, the inner string is the name of the method.
     private var interfaces: [String: [String: AdaptorCall]] = [:]
     private var path: String
     private var vtable: DBusObjectPathVTable
 
-    init(connection: DBusConnection, objectPath: String) throws {
+    init(connection: DBusConnection, dispatchQueue: DispatchQueue, objectPath: String) throws {
         Log.entry("")
 
+        // This attempts to make libdbus somewhat thread safe, but it is only really for connection related stuff, and
+        // not for Messages or Dispatch. We very carefully dispatch from a single threaded event loop.
+        var b = Bool(dbus_threads_init_default())
+        if b == false {
+            throw RuntimeError.generic("dbus_threads_init_default() failed")
+        }
+
         self.connection = connection
+        self.dispatchQueue = dispatchQueue
         self.path = objectPath
         self.vtable = DBusObjectPathVTable()
         self.vtable.message_function = objectPathMessageFunction
@@ -61,8 +71,8 @@ public class Adaptor {
         // Grap an UnsafeMutableRawPointer to self so that we can pass it into C land
         let data = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
         let error = DBusError()
-        let b = Bool(dbus_connection_try_register_object_path(self.connection.internalPointer, self.path, &self.vtable,
-                                                              data, &error.cError))
+        b = Bool(dbus_connection_try_register_object_path(self.connection.internalPointer, self.path, &self.vtable,
+                                                          data, &error.cError))
         if b == false && error.isSet {
             throw error
         }
@@ -78,18 +88,28 @@ public class Adaptor {
     }
 
     /**
+     Add a method to the ServerAdaptor. This runs on the DBusManager DispatchQueue, so don't call it from a callback on
+     the DBusManager DispatchQueue or you will deadlock.
+
      - Parameters:
          - interface: DBus interface name to register fn for.
          - member: The member name to register fn for.
          - fn: The function to call when this interface + member is called
      */
     public func addMethod(interface: String, member: String, fn: @escaping AdaptorCall) {
-        if var i = self.interfaces[interface] {
-            i[member] = fn
-            self.interfaces[interface] = i
-        } else {
-            self.interfaces[interface] = [member: fn]
-        }
+        self.dispatchQueue.sync(flags: .barrier) { [weak self] in
+            guard let s = self else {
+                Log.error("couldn't get self!")
+                return
+            }
+
+            if var i = s.interfaces[interface] {
+                i[member] = fn
+                s.interfaces[interface] = i
+            } else {
+                s.interfaces[interface] = [member: fn]
+            }
+        } // dispatchQueue.sync()
     }
 
     func objectPathMessage(_ message: DBusMessage) -> CDBus.DBusHandlerResult {

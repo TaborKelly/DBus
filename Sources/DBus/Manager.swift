@@ -175,7 +175,9 @@ public final class DBusManager {
                                       path: objectPath,
                                       iface: "org.freedesktop.DBus.Properties",
                                       method: "Get")
-        try message.append(contentsOf: [.string(interface), .string(property)])
+        let encoder = DBusEncoder()
+        try encoder.encode(interface, to: message, signature: "s")
+        try encoder.encode(property, to: message, signature: "s")
 
         guard let r = try connection.sendWithReply(message: message) else {
             throw RuntimeError.generic("DBusManager.sendWithReply() failed!")

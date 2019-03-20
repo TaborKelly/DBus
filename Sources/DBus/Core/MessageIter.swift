@@ -79,19 +79,6 @@ extension DBusMessageIter {
         return String(cString: cString)
     }
 
-    // TODO: can we remove this?
-    private func signature() throws -> DBusSignature {
-
-        guard let cString = dbus_message_iter_get_signature(&iter)
-            else { throw RuntimeError.generic("dbus_message_iter_get_signature() failed") }
-
-        let string = String(cString: cString)
-
-        dbus_free(UnsafeMutableRawPointer(cString))
-
-        return DBusSignature(string)
-    }
-
     public func getBasic() throws -> DBusBasicValue {
         let t = try getType()
         if t.isBasic == false {
@@ -153,70 +140,6 @@ internal extension DBusMessageIter {
         try self.append(&cBasicValue, type)
     }
 
-    // TODO: REVISIT. Can we get rid of this? It would let us remove a lot of code.
-    func append(argument: DBusMessageArgument) throws {
-
-        switch argument {
-
-        case let .byte(value):
-            var basicValue = CDBus.DBusBasicValue(byt: value)
-            try append(&basicValue, .byte)
-        case let .boolean(value):
-            var basicValue = CDBus.DBusBasicValue(bool_val: dbus_bool_t(value))
-            try append(&basicValue, .boolean)
-        case let .int16(value):
-            var basicValue = CDBus.DBusBasicValue(i16: value)
-            try append(&basicValue, .int16)
-        case let .uint16(value):
-            var basicValue = CDBus.DBusBasicValue(u16: value)
-            try append(&basicValue, .uint16)
-        case let .int32(value):
-            var basicValue = CDBus.DBusBasicValue(i32: value)
-            try append(&basicValue, .int32)
-        case let .uint32(value):
-            var basicValue = CDBus.DBusBasicValue(u32: value)
-            try append(&basicValue, .uint32)
-        case let .int64(value):
-            var basicValue = CDBus.DBusBasicValue(i64: dbus_int64_t(value))
-            try append(&basicValue, .int64)
-        case let .uint64(value):
-            var basicValue = CDBus.DBusBasicValue(u64: dbus_uint64_t(value))
-            try append(&basicValue, .uint64)
-        case let .double(value):
-            var basicValue = CDBus.DBusBasicValue(dbl: value)
-            try append(&basicValue, .double)
-        case let .fileDescriptor(value):
-            var basicValue = CDBus.DBusBasicValue(fd: value.rawValue)
-            try append(&basicValue, .fileDescriptor)
-
-        case let .string(value):
-            try append(value)
-        case let .objectPath(value):
-            try append(value.rawValue, .objectPath)
-        case let .signature(value):
-            try append(value.rawValue, .signature)
-
-        case let .array(array):
-            try appendContainer(type: .array, signature: DBusSignature([array.type])) {
-                for element in array {
-                    try $0.append(argument: element)
-                }
-            }
-
-        case let .struct(structure):
-            try appendContainer(type: .struct) {
-                for element in structure {
-                    try $0.append(argument: element)
-                }
-            }
-
-        case let .variant(variant):
-            try appendContainer(type: .variant, signature: DBusSignature([variant.type])) {
-                try $0.append(argument: variant)
-            }
-        }
-    }
-
     private func append(_ basicValue: inout CDBus.DBusBasicValue, _ type: DBusType) throws {
 
         guard withUnsafePointer(to: &basicValue, {
@@ -231,24 +154,5 @@ internal extension DBusMessageIter {
             var basicValue = CDBus.DBusBasicValue(str: cString)
             try append(&basicValue, type)
         }
-    }
-
-    /**
-     Appends a container-typed value to the message.
-    */
-    private func appendContainer(type: DBusType, signature: DBusSignature? = nil, container: (inout DBusMessageIter) throws -> ()) throws {
-
-        var subIterator = DBusMessageIter()
-
-        /**
-         On success, you are required to append the contents of the container using the returned sub-iterator, and then call dbus_message_iter_close_container(). Container types are for example struct, variant, and array. For variants, the contained_signature should be the type of the single value inside the variant. For structs and dict entries, contained_signature should be NULL; it will be set to whatever types you write into the struct. For arrays, contained_signature should be the type of the array elements.
-        */
-
-        guard Bool(dbus_message_iter_open_container(&iter, Int32(type.integerValue), signature?.rawValue, &subIterator.iter))
-            else { throw RuntimeError.generic("dbus_message_iter_open_container() failed") }
-
-        defer { dbus_message_iter_close_container(&iter, &subIterator.iter) }
-
-        try container(&subIterator)
     }
 }

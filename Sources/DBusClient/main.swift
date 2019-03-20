@@ -49,7 +49,7 @@ do {
         print("manager.getProperty failed!")
         exit(1)
     }
-    print(pm)
+    print("propertyS: \(pm)")
 
     // Simple types
     try send(manager: manager, method: "b", true, signature: "b")

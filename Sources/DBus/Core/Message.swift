@@ -120,24 +120,6 @@ public final class DBusMessage {
         self.internalPointer = internalPointer
     }
 
-    // MARK: - Methods
-
-    /// Append argument.
-    public func append(_ argument: DBusMessageArgument) throws {
-
-        let iterator = DBusMessageIter(appending: self)
-        try iterator.append(argument: argument)
-    }
-
-    /// Append contents of sequence.
-    public func append <S: Sequence> (contentsOf sequence: S) throws where S.Element == DBusMessageArgument {
-
-        let iterator = DBusMessageIter(appending: self)
-        try sequence.forEach { try iterator.append(argument: $0) }
-    }
-
-    // MARK: - Properties
-
     /// The message type.
     public lazy var type: DBusMessageType = {
 

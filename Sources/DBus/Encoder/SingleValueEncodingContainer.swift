@@ -217,7 +217,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
             throw EncodingError.invalidValue(any as Any, context)
         }
 
-        try msgIter.append(argument: .boolean(value))
+        try msgIter.append(.boolean(value))
     }
 
     // This is exposed so that KeyedEncodingContainer can use it
@@ -242,7 +242,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         switch t {
         case .byte:
             if let uint8 = UInt8(exactly: value) {
-                try msgIter.append(argument: .byte(uint8))
+                try msgIter.append(.byte(uint8))
             } else {
                 let debugDescription = "Could not encode \(t) as a byte for path \(codingPath)"
                 let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
@@ -251,7 +251,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         case .int16:
             if let int16 = Int16(exactly: value) {
-                try msgIter.append(argument: .int16(int16))
+                try msgIter.append(.int16(int16))
             } else {
                 let debugDescription = "Could not encode \(t) as a int16 for path \(codingPath)"
                 let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
@@ -260,7 +260,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         case .uint16:
             if let uint16 = UInt16(exactly: value) {
-                try msgIter.append(argument: .uint16(uint16))
+                try msgIter.append(.uint16(uint16))
             } else {
                 let debugDescription = "Could not encode \(t) as a uint16 for path \(codingPath)"
                 let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
@@ -269,7 +269,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         case .int32:
             if let int32 = Int32(exactly: value) {
-                try msgIter.append(argument: .int32(int32))
+                try msgIter.append(.int32(int32))
             } else {
                 let debugDescription = "Could not encode \(t) as a int32 for path \(codingPath)"
                 let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
@@ -278,7 +278,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         case .uint32, .fileDescriptor:
             if let uint32 = UInt32(exactly: value) {
-                try msgIter.append(argument: .uint32(uint32))
+                try msgIter.append(.uint32(uint32))
             } else {
                 let debugDescription = "Could not encode \(t) as a uint32 for path \(codingPath)"
                 let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
@@ -287,7 +287,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         case .int64:
             if let int64 = Int64(exactly: value) {
-                try msgIter.append(argument: .int64(int64))
+                try msgIter.append(.int64(int64))
             } else {
                 let debugDescription = "Could not encode \(t) as a int64 for path \(codingPath)"
                 let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
@@ -296,7 +296,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
 
         case .uint64:
             if let uint64 = UInt64(exactly: value) {
-                try msgIter.append(argument: .uint64(uint64))
+                try msgIter.append(.uint64(uint64))
             } else {
                 let debugDescription = "Could not encode \(t) as a uint64 for path \(codingPath)"
                 let context = EncodingError.Context(codingPath: codingPath, debugDescription: debugDescription)
@@ -320,7 +320,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
             throw EncodingError.invalidValue(value, context)
         }
 
-        try msgIter.append(argument: .double(value))
+        try msgIter.append(.double(value))
     }
 
     // This is exposed so that KeyedEncodingContainer can use it
@@ -336,7 +336,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         }
 
         let double = Double(value)
-        try msgIter.append(argument: .double(double))
+        try msgIter.append(.double(double))
     }
 
     func dbusEncode(msgIter msgIterIn: DBusMessageIter, sigIter: DBusSignatureIter, _ value: DBusBasicValue) throws {
@@ -436,7 +436,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
             throw EncodingError.invalidValue(value, context)
         }
 
-        try msgIter.append(argument: .double(value))
+        try msgIter.append(.double(value))
     }
 
     func dbusEncode(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: Float) throws {
@@ -450,7 +450,7 @@ extension _DBusEncoder.SingleValueContainer: _DBusEncodingContainer {
         }
 
         let double = Double(value)
-        try msgIter.append(argument: .double(double))
+        try msgIter.append(.double(double))
     }
 
     func dbusEncode<T>(msgIter: DBusMessageIter, sigIter: DBusSignatureIter, _ value: T) throws where T : Encodable {

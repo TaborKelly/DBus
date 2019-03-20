@@ -22,6 +22,7 @@ public final class DBusConnection {
 
     // MARK: - Properties
 
+    /// Is this a shared connection?
     public let shared: Bool
 
     // MARK: - Internal Properties
@@ -115,6 +116,14 @@ public final class DBusConnection {
 
     // MARK: - Methods
 
+    /**
+     Request a well known service name by calling org.freedesktop.DBus.RequestName.
+
+     - Parameters:
+         - name: The destination (probably a well known service name).
+         - flags: Flags are described in the
+                  [DBus Specification](https://dbus.freedesktop.org/doc/dbus-specification.html).
+         */
     public func requestName(_ name: String, flags: UInt32 = 0) throws {
         let error = DBusError()
         let i = dbus_bus_request_name(self.internalPointer, name, flags, &error.cError)
@@ -168,10 +177,10 @@ public final class DBusConnection {
         dbus_connection_close(internalPointer)
     }
 
-    /// Tests whether a certain type can be sent via the connection.
-    public func canSend(type: DBusType) -> Bool {
+    /// Where this system lets us send a Unix FD on this connection.
+    public func canSendFd() -> Bool {
 
-        return Bool(dbus_connection_can_send_type(internalPointer, Int32(type.integerValue)))
+        return Bool(dbus_connection_can_send_type(internalPointer, Int32(DBusType.fileDescriptor.integerValue)))
     }
 
     /// Adds a message to the outgoing message queue.

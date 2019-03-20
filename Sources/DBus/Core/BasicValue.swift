@@ -1,6 +1,6 @@
 import CDBus
 
-public enum DBusBasicValue {
+enum DBusBasicValue {
     case byte(UInt8)
     case boolean(Bool)
     case int16(Int16)

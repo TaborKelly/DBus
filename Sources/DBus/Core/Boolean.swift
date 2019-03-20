@@ -7,7 +7,7 @@
 
 import CDBus
 
-public extension Bool {
+extension Bool {
 
     init(_ boolValue: dbus_bool_t) {
 
@@ -15,7 +15,7 @@ public extension Bool {
     }
 }
 
-public extension dbus_bool_t {
+extension dbus_bool_t {
 
     init(_ boolValue: Bool) {
 

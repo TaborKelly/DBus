@@ -44,21 +44,6 @@ public final class DBusMessage {
         self.internalPointer = internalPointer
     }
 
-    /// Creates a new message that is an error reply to another message.
-    ///
-    /// Error replies are most common in response to method calls, but can be returned in reply to any message.
-    /// The error name must be a valid error name according to the syntax given in the D-Bus specification.
-    /// If you don't want to make up an error name just use `org.freedesktop.DBus.Error.Failed`.
-    ///
-    /// - Parameter error: A tuple consisting of the message to reply to, the error name, and the error message.
-    public init(error: Error) throws {
-
-        guard let internalPointer = dbus_message_new_error(error.replyTo.internalPointer, error.name, error.message)
-            else { throw RuntimeError.generic("dbus_message_new_error() failed") }
-
-        self.internalPointer = internalPointer
-    }
-
     /// Constructs a new message to invoke a method on a remote object.
     ///
     /// - Note: Destination, path, interface, and method name can't contain any invalid characters (see the D-Bus specification).
@@ -103,19 +88,6 @@ public final class DBusMessage {
 
         guard let internalPointer = dbus_message_new_error(replyTo.internalPointer, errorName, errorMessage)
             else { throw RuntimeError.generic("dbus_message_new_method_return() failed") }
-
-        self.internalPointer = internalPointer
-    }
-
-    /// Constructs a new message representing a signal emission.
-    ///
-    /// A signal is identified by its originating object path, interface, and the name of the signal.
-    ///
-    /// - Note: Path, interface, and signal name must all be valid.
-    public init(signal: Signal) throws {
-
-        guard let internalPointer = dbus_message_new_signal(signal.path, signal.interface, signal.name)
-            else { throw RuntimeError.generic("dbus_message_new_signal() failed") }
 
         self.internalPointer = internalPointer
     }
@@ -256,10 +228,6 @@ public final class DBusMessage {
         return string
     }
 
-    public func getInterface() -> String {
-        return String(cString: dbus_message_get_interface(self.internalPointer))
-    }
-
     /// Sets the interface this message is being sent to (for `DBusMessageType.MethodCall`)
     /// or the interface a signal is being emitted from (for `DBusMessageType.Signal`).
     public func setInterface(_ newValue: String?) throws {
@@ -391,40 +359,5 @@ public extension DBusMessage {
         let copyMessage = DBusMessage(copyPointer)
 
         return copyMessage
-    }
-}
-
-// MARK: - Supporting Types
-
-public extension DBusMessage {
-
-    public struct Error {
-
-        public let replyTo: DBusMessage
-        public let name: String
-        public let message: String
-
-        public init(replyTo: DBusMessage, name: String, message: String) {
-
-            self.replyTo = replyTo
-            self.name = name
-            self.message = message
-        }
-
-        public init(replyTo: DBusMessage, error: DBusError) {
-
-            self.init(replyTo: replyTo, name: error.name, message: error.message)
-        }
-    }
-}
-
-public extension DBusMessage {
-
-    /// A signal is identified by its originating object path, interface, and the name of the signal.
-    public struct Signal {
-
-        public let path: String
-        public let interface: String
-        public let name: String
     }
 }

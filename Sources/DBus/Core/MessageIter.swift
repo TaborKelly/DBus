@@ -29,6 +29,22 @@ public extension DBusMessageIter {
         dbus_message_iter_init(message.internalPointer, &iter)
     }
 
+    /**
+     Points the DBusMessageIter at the next element in the message.
+
+     - Returns true on success and false if there wasn't another element.
+     */
+    public func next() -> Bool {
+        return Bool(dbus_message_iter_next(&iter))
+    }
+
+    /// Is there another element in this message?
+    public func hasNext() -> Bool {
+        return Bool(dbus_message_iter_has_next(&iter))
+    }
+}
+
+extension DBusMessageIter {
     func openContainer(containerType: DBusType,
                        // For variants, the contained_signature should be the type of the single value inside the
                        // variant. For structs and dict entries, contained_signature should be NULL; it will be set to
@@ -60,14 +76,7 @@ public extension DBusMessageIter {
         return sub
     }
 
-    /**
-     Points the DBusMessageIter at the next element in the message.
 
-     - Returns true on success and false if there wasn't another element.
-     */
-    public func next() -> Bool {
-        return Bool(dbus_message_iter_next(&iter))
-    }
 
     /// Read a basic value into the provided pointer.
     @inline(__always)
@@ -126,11 +135,6 @@ public extension DBusMessageIter {
         }
 
         return t
-    }
-
-    /// Is there another element in this message?
-    public func hasNext() -> Bool {
-        return Bool(dbus_message_iter_has_next(&iter))
     }
 }
 

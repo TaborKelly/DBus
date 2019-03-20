@@ -8,7 +8,7 @@
 import CDBus
 
 /// DBus Type (for internal usage with libdbus)
-public enum DBusType: String {
+enum DBusType: String {
 
     // MARK: - Fixed Length Types
 
@@ -85,7 +85,7 @@ public enum DBusType: String {
     case dictionaryEntry    = "e" // e (101)
 }
 
-public extension DBusType {
+extension DBusType {
 
     /// A "basic type" is a somewhat arbitrary concept, but the intent is to include those types that
     /// are fully-specified by a single typecode, with no additional type information or nested values.

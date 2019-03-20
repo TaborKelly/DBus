@@ -119,7 +119,12 @@ public class DBusServerAdaptor {
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED
         }
 
-        guard let i = self.interfaces[message.getInterface()] else {
+        guard let interface = message.interface else {
+            // This should never happen
+            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED
+        }
+
+        guard let i = self.interfaces[interface] else {
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED
         }
 

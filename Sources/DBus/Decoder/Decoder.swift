@@ -5,6 +5,7 @@ import LoggerAPI
  An object that decodes instances of a data type from DBus messages (DBusMessage).
  */
 final public class DBusDecoder {
+    /// Nothing special. Initialize the DBusDecoder for use.
     public init() {}
 
     /// A dictionary you use to customize the decoding process by providing contextual information.

@@ -7,10 +7,8 @@
 
 import CDBus
 
-// MARK: - Iterating
-
-// A thin wrapper for the libdbus DBusMessageIter
-// NOT a Swift iterator
+/// A thin wrapper for the libdbus DBusMessageIter
+/// NOT a Swift iterator
 public class DBusMessageIter {
     var iter: CDBus.DBusMessageIter
 
@@ -19,7 +17,13 @@ public class DBusMessageIter {
     }
 }
 
-extension DBusMessageIter {
+public extension DBusMessageIter {
+    /**
+     Initialize DBusMessageIter from an existing `DBusMessage`.
+
+     - Parameters:
+         - iterating: The message that you want to iterate.
+     */
     public convenience init(iterating message: DBusMessage) {
         self.init()
         dbus_message_iter_init(message.internalPointer, &iter)
@@ -56,7 +60,12 @@ extension DBusMessageIter {
         return sub
     }
 
-    func next() -> Bool {
+    /**
+     Points the DBusMessageIter at the next element in the message.
+
+     - Returns true on success and false if there wasn't another element.
+     */
+    public func next() -> Bool {
         return Bool(dbus_message_iter_next(&iter))
     }
 
@@ -79,7 +88,7 @@ extension DBusMessageIter {
         return String(cString: cString)
     }
 
-    public func getBasic() throws -> DBusBasicValue {
+    func getBasic() throws -> DBusBasicValue {
         let t = try getType()
         if t.isBasic == false {
             throw RuntimeError.generic("DBusMessageIter.getBasic(): \(t) is not a basic type.")
@@ -97,11 +106,11 @@ extension DBusMessageIter {
         }
     }
 
-    public func getSignature() -> String {
+    func getSignature() -> String {
         return String(cString: dbus_message_iter_get_signature(&iter))
     }
 
-    public func getType() throws -> DBusType {
+    func getType() throws -> DBusType {
         let i = dbus_message_iter_get_arg_type(&iter)
         guard let t = DBusType(i) else {
             throw RuntimeError.generic("DBusMessageIter.getType(): DBusType() initializer failed")
@@ -110,7 +119,7 @@ extension DBusMessageIter {
         return t
     }
 
-    public func getElementType() throws -> DBusType {
+    func getElementType() throws -> DBusType {
         let i = dbus_message_iter_get_element_type(&iter)
         guard let t = DBusType(i) else {
             throw RuntimeError.generic("DBusMessageIter.getElementType(): DBusType() initializer failed")
@@ -119,6 +128,7 @@ extension DBusMessageIter {
         return t
     }
 
+    /// Is there another element in this message?
     public func hasNext() -> Bool {
         return Bool(dbus_message_iter_has_next(&iter))
     }

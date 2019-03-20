@@ -8,9 +8,12 @@
 import Foundation
 import CDBus
 
+/// An error type to describe errors that do not originate from DBus or Swift's Codable framework.
 public enum RuntimeError: Error {
+    /// A catch all error for if libdbus does something that we did not expect.
     case generic(String)
-    case logicError(String) // we encountered an error case that we never expected. Probably due to a bug in the code.
+    /// We encountered an error case that we never expected. Probably due to a bug in the code.
+    case logicError(String)
 }
 
 // Given a swift string, make a copy of the C string (char *) and return a pointer to it
@@ -36,13 +39,25 @@ func swiftStringToConstCharStar(_ s: String) throws -> UnsafePointer<Int8> {
     return UnsafePointer(unsafeMutablePointer)
 }
 
-public class DBusError: Error, Equatable, CustomStringConvertible /*, Hashable*/ {
+/**
+ * A class that represents a DBus error.
+ */
+public class DBusError: Error, Equatable, CustomStringConvertible {
     internal var cError = CDBus.DBusError()
 
     init() {
         dbus_error_init(&cError);
     }
 
+    /**
+     Initialize a new DBusError.
+
+     ex: DBusError(name: DBusError.Name.invalidArguments, message: "Your arguments were wrong.")
+
+     - Parameters:
+         - name: The error name (must be a valid DBus Error name).
+         - message: A message to send along.
+     */
     public convenience init(name: String, message: String = "") throws {
         self.init()
 
@@ -61,19 +76,22 @@ public class DBusError: Error, Equatable, CustomStringConvertible /*, Hashable*/
         dbus_error_free(&cError)
     }
 
-    public var isSet: Bool {
+    var isSet: Bool {
         let dbusBool = dbus_error_is_set(&cError)
         return Bool(dbusBool)
     }
 
+    /// The name of the errror.
     public var name: String {
         return String(cString: cError.name)
     }
 
+    /// The error message.
     public var message: String {
         return String(cString: cError.message)
     }
 
+    /// You can compare errors if you really want to.
     public static func == (lhs: DBusError, rhs: DBusError) -> Bool {
         let lhsName = String(cString: lhs.cError.name)
         let rhsName = String(cString: rhs.cError.name)
@@ -83,6 +101,7 @@ public class DBusError: Error, Equatable, CustomStringConvertible /*, Hashable*/
                 lhsMessage == rhsMessage)
     }
 
+    /// Error discription.
     public var description: String {
         return "DBusError(name: '\(name)', message: '\(message)') "
     }
@@ -90,6 +109,7 @@ public class DBusError: Error, Equatable, CustomStringConvertible /*, Hashable*/
 
 public extension DBusError {
 
+    /// This lets you easily create errors with common names.
     public struct Name {
         /// A generic error; "something went wrong" - see the error message for more.
         ///

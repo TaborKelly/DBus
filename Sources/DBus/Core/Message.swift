@@ -271,22 +271,19 @@ public final class DBusMessage {
     /// or the one a signal is being emitted from (for signal call type).
     ///
     /// The path must contain only valid characters as defined in the D-Bus specification.
-    public var path: DBusObjectPath? {
+    public var path: String? {
 
         guard let string = getString(dbus_message_get_path)
             else { return nil }
 
-        guard let objectPath = DBusObjectPath(rawValue: string)
-            else { fatalError("Invalid object path \(string)") }
-
-        return objectPath
+        return string
     }
 
     /// Sets the object path this message is being sent to (for `DBusMessageType.MethodCall`)
     /// or the one a signal is being emitted from (for `DBusMessageType.Signal`).
-    public func setPath(_ newValue: DBusObjectPath?) throws {
+    public func setPath(_ newValue: String?) throws {
 
-        try setString(dbus_message_set_path, newValue?.rawValue)
+        try setString(dbus_message_set_path, newValue)
     }
 
     /// The interface member being invoked (for method call type) or emitted (for signal type).
@@ -361,7 +358,7 @@ public final class DBusMessage {
         } else {
 
             guard Bool(function(internalPointer, nil))
-                else { throw RuntimeError.generic("function(internalPointer, nil) failed") }
+                else { throw RuntimeError.generic("setString failed") }
         }
     }
 }

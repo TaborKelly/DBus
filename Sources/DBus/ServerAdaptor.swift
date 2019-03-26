@@ -55,24 +55,17 @@ public class DBusServerAdaptor {
     init(connection: DBusConnection, dispatchQueue: DispatchQueue, objectPath: String) throws {
         Log.entry("")
 
-        // This attempts to make libdbus somewhat thread safe, but it is only really for connection related stuff, and
-        // not for Messages or Dispatch. We very carefully dispatch from a single threaded event loop.
-        var b = Bool(dbus_threads_init_default())
-        if b == false {
-            throw RuntimeError.generic("dbus_threads_init_default() failed")
-        }
-
         self.connection = connection
         self.dispatchQueue = dispatchQueue
         self.path = objectPath
         self.vtable = DBusObjectPathVTable()
         self.vtable.message_function = objectPathMessageFunction
 
-        // Grap an UnsafeMutableRawPointer to self so that we can pass it into C land
+        // Grab an UnsafeMutableRawPointer to self so that we can pass it into C land
         let data = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
         let error = DBusError()
-        b = Bool(dbus_connection_try_register_object_path(self.connection.internalPointer, self.path, &self.vtable,
-                                                          data, &error.cError))
+        let b = Bool(dbus_connection_try_register_object_path(self.connection.internalPointer, self.path, &self.vtable,
+                                                              data, &error.cError))
         if b == false && error.isSet {
             throw error
         }

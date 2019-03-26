@@ -19,14 +19,12 @@ HeliumLogger.use(.debug) // For even more debug replace .debug with .entry
 ## TODO:
 - Better documentation
 - Revisit serial numbers
-- Revisit code cleanup. We probably have some code and types that we don't really need.
-- Better test harness.
+- Better test harness?
 - Revisit file handles (`UNIX_FD h (104)`). The [DBus specification](https://dbus.freedesktop.org/doc/dbus-specification.html) says that they are unsigned 32 bit integers, but libdbus treats them as signed 32 bit integers, which would seem to make more sense.
 - Test on 32 bit platforms.
-- Check for memory leaks
+- Check for memory leaks.
 - Consider removing all debug logging from the Codable code, they make a lot of method calls.
 - Server side DBus property support.
-- DBusManager: support system bus.
 - More graceful handling if you try to decode an empty message?
 
 ## Source code organization

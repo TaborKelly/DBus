@@ -52,7 +52,7 @@ final class RoundTripTests: XCTestCase {
     override func setUp() {
         HeliumLogger.use(.entry)
         do {
-            self.manager = try DBusManager.getManager()
+            self.manager = try DBusManager()
         } catch {
             XCTFail("\(error)")
         }

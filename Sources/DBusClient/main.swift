@@ -37,7 +37,7 @@ func send<T: Encodable>(manager: DBusManager, method: String, _ toSend: T, signa
 }
 
 do {
-    let manager = try DBusManager.getManager()
+    let manager = try DBusManager()
     print(manager)
     try manager.addSignalFilter(interface: "com.racepointenergy.DBus.EchoServer", signal: "foo", fn: fooSignal)
 

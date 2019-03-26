@@ -10,7 +10,7 @@ enum DBusBasicValue {
     case int64(Int64)
     case uint64(UInt64)
     case double(Double)
-    case fileDescriptor(UInt32)
+    case fileDescriptor(Int32)
     case string(String)
     case objectPath(String)
     case signature(String)
@@ -38,7 +38,7 @@ extension DBusBasicValue {
         case .double:
             self = .double(basicValue.dbl)
         case .fileDescriptor:
-            self = .fileDescriptor(UInt32(basicValue.fd))
+            self = .fileDescriptor(basicValue.fd)
         case .string:
             self = .string(String(cString: basicValue.str))
         case .objectPath:

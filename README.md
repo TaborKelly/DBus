@@ -15,12 +15,12 @@ HeliumLogger.use(.debug) // For even more debug replace .debug with .entry
 - DBus does not support Floats, but it does support Doubles. Floats will automatically be converted to Doubles when encoding.
 - All complex types in variants will be encoded as variants, because the alternative is untenable.
 - DBus does not support Signed 8 bit integers, so they are encoded as unsigned integers in the event that they appear in a variant.
+- The [DBus specification](https://dbus.freedesktop.org/doc/dbus-specification.html) says that file descriptors are unsigned 32 bit integers, but libdbus treats them as signed 32 bit integers. We follow the libdbus convention.
 
 ## TODO:
 - Better documentation
 - Revisit serial numbers
 - Better test harness?
-- Revisit file handles (`UNIX_FD h (104)`). The [DBus specification](https://dbus.freedesktop.org/doc/dbus-specification.html) says that they are unsigned 32 bit integers, but libdbus treats them as signed 32 bit integers, which would seem to make more sense.
 - Test on 32 bit platforms.
 - Check for memory leaks.
 - Consider removing all debug logging from the Codable code, they make a lot of method calls.

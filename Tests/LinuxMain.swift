@@ -2,8 +2,9 @@ import XCTest
 @testable import DBusTests
 
 XCTMain([
-    testCase(InterfaceTests.allTests),
-    testCase(MessageTests.allTests),
-    testCase(ObjectPathTests.allTests),
-    testCase(SignatureTests.allTests)
+    testCase(CodableTests.allTests),
+    testCase(ConnectionTests.allTests),
+    testCase(DBusSignatureIterTests.allTests),
+    testCase(ErrorTests.allTests),
+    testCase(RoundTripTests.allTests),
     ])

@@ -23,7 +23,7 @@ enum DBusType: String {
     /// Type code marking a 16-bit signed integer
     case int16              = "n" // n (110)
 
-    /// Type code marking a 16-bit unsigned integer. 
+    /// Type code marking a 16-bit unsigned integer.
     case uint16             = "q" // q (113)
 
     /// Signed (two's complement) 32-bit integer

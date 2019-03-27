@@ -20,7 +20,7 @@ public final class DBusPendingCall {
     internal let internalPointer: OpaquePointer
 
     // MARK: - Private Properties
-    
+
     private var replyMessageCache: DBusMessage? // TODO: revisit, can we get rid of this?
 
     // MARK: - Initialization

@@ -19,10 +19,8 @@ HeliumLogger.use(.debug) // For even more debug replace .debug with .entry
 
 ## TODO:
 - Better documentation
-- Revisit serial numbers
 - Better test harness?
 - Test on 32 bit platforms.
-- Check for memory leaks.
 - Consider removing all debug logging from the Codable code, they make a lot of method calls.
 - Server side DBus property support.
 - More graceful handling if you try to decode an empty message?
